@@ -1,0 +1,17 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.gradle/
+node_modules/
+.env
+
+# Ignore irrelevant files from Windows and other systems
+Application Data/
+Cookies/
+Local Settings/
+Recent/
+SendTo/
+Start Menu/
+Templates/
