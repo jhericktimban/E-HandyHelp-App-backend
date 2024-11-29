@@ -74,6 +74,10 @@ const userSchema = new mongoose.Schema(
       type: String, // Store the OTP as a string
       default: null, // Default to null if not set
     },
+    logged_in: {
+      type: Number,
+      default: 0, // Default to 0, meaning not logged in
+    },
   },
   {
     timestamps: true,
@@ -123,6 +127,52 @@ const ContactAdminSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+// Logout endpoint
+app.post("/logout-user", async (req, res) => {
+  const { userId } = req.body; // Assuming you send the user ID from the client
+
+  try {
+    // Find the user and set logged_in to 0
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.logged_in = 0;
+    await user.save();
+
+    // Log successful logout
+    console.log(`User ${user.username} logged out successfully.`);
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Logout endpoint for handyman
+app.post("/logout-handyman", async (req, res) => {
+  const { handymanId } = req.body; // Assuming you send the handyman ID from the client
+
+  try {
+    // Find the handyman and set logged_in to 0
+    const handyman = await Handyman.findById(handymanId);
+    if (!handyman) {
+      return res.status(404).json({ message: "Handyman not found" });
+    }
+
+    handyman.logged_in = 0;
+    await handyman.save();
+
+    // Log successful logout
+    console.log(`Handyman ${handyman.username} logged out successfully.`);
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Error during handyman logout:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 const ContactAdmin = mongoose.model("ContactAdmin", ContactAdminSchema);
 
@@ -263,11 +313,16 @@ const handymanSchema = new mongoose.Schema(
       type: String, // Store the OTP as a string
       default: null, // Default to null if not set
     },
+    logged_in: {
+      type: Number,
+      default: 0, // Default to 0, meaning not logged in
+    },
   },
   {
     timestamps: true, // Automatically create createdAt and updatedAt fields
   },
 );
+
 
 const Handyman = mongoose.model("Handyman", handymanSchema);
 
@@ -301,48 +356,52 @@ app.post("/register-handyman", async (req, res) => {
   } = req.body;
 
   // Password hashing
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const handyman = new Handyman({
-    fname,
-    lname,
-    username,
-    password: hashedPassword,
-    dateOfBirth,
-    contact,
-    address,
-    specialization,
-    idImages,
-    certificatesImages,
-    dataPrivacyConsent,
-  });
-
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const handyman = new Handyman({
+      fname,
+      lname,
+      username,
+      password: hashedPassword,
+      dateOfBirth,
+      contact,
+      address,
+      specialization,
+      idImages,
+      certificatesImages,
+      dataPrivacyConsent,
+    });
+
     await handyman.save();
     res.status(201).send("Handyman registered successfully");
   } catch (error) {
-    res.status(500).send("Error registering handyman");
+    // Log the error to the console for debugging
+    console.error("Error registering handyman:", error);
+
+    // Send a more descriptive error message (avoid sending sensitive information)
+    res.status(500).send("Error registering handyman. Please try again later.");
   }
 });
 
 // Login endpoint
 app.post("/login-handyman", async (req, res) => {
-  const { username, password } = req.body; // Removed fname and lname from here
+  const { username, password } = req.body;
 
-  console.log("Login attempt:", { username }); // Log the attempt to login
+  console.log("Login attempt:", { username });
 
   try {
     // Check if handyman exists
     const handyman = await Handyman.findOne({ username });
     if (!handyman) {
-      console.warn(`Login failed: Invalid username - ${username}`); // Log warning for invalid username
+      console.warn(`Login failed: Invalid username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, handyman.password);
     if (!isMatch) {
-      console.warn(`Login failed: Invalid password for username - ${username}`); // Log warning for invalid password
+      console.warn(`Login failed: Invalid password for username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
@@ -351,10 +410,12 @@ app.post("/login-handyman", async (req, res) => {
       expiresIn: "1h",
     });
 
+    // Update the handyman's logged-in status
+    handyman.logged_in = 1;
+    await handyman.save(); // Save the update to the database
+
     // Log successful login
-    console.log(
-      `Login successful for user: ${username}, Handyman ID: ${handyman._id}`,
-    ); // Log successful login
+    console.log(`Login successful for user: ${username}, Handyman ID: ${handyman._id}`);
 
     // Send handyman data along with the token
     res.json({
@@ -372,10 +433,11 @@ app.post("/login-handyman", async (req, res) => {
         certificatesImages: handyman.certificatesImages,
         dataPrivacyConsent: handyman.dataPrivacyConsent,
         accounts_status: handyman.accounts_status,
+        logged_in: handyman.logged_in, // Include logged_in status in response
       },
     });
   } catch (error) {
-    console.error("Error during login:", error); // Log any server error
+    console.error("Error during login:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -422,7 +484,6 @@ app.get("/requested-profiles", async (req, res) => {
 });
 
 // Login endpoint
-// Login endpoint
 app.post("/login-user", async (req, res) => {
   const { username, password } = req.body;
 
@@ -455,8 +516,12 @@ app.post("/login-user", async (req, res) => {
       expiresIn: "1h",
     });
 
+    // Update the user's logged-in status
+    user.logged_in = 1;
+    await user.save(); // Save the update to the database
+
     // Log the token generation success
-    console.log("JWT token generated for user:", username);
+    console.log("JWT token generated and logged_in status updated for user:", username);
 
     // Return the token and user data including _id
     res.json({
@@ -471,6 +536,7 @@ app.post("/login-user", async (req, res) => {
         dateOfBirth: user.dateOfBirth,
         images: user.images,
         accounts_status: user.accounts_status,
+        logged_in: user.logged_in, // Include logged_in status in response
       },
     });
   } catch (error) {
