@@ -17,9 +17,6 @@ const PORT = process.env.PORT || 3000;
 // Import dotenv to load environment variables
 require('dotenv').config();
 
-// MongoDB connection
-const mongoose = require('mongoose');
-
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
