@@ -1513,3 +1513,7 @@ app.post("/reset-password/:userId", async (req, res) => {
       .json({ message: "An error occurred", error: error.message });
   }
 });
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
