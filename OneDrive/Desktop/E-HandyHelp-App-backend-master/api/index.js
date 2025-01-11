@@ -1382,6 +1382,7 @@ const sendOTP = async (phoneNumber, otp) => {
   const apiKey = "6ce2d9ac9d5da878b0a9bb7b62aaddc5";
   const apiUrl = "https://api.semaphore.co/api/v4/messages";
 
+
   try {
     const response = await axios.post(
       apiUrl,
