@@ -1399,7 +1399,7 @@ const sendOTP = async (phoneNumber, otp) => {
     );
     return response.data; // Response from Semaphore API
   } catch (error) {
-    console.error("Error sending OTP:", error.message);
+    console.error("Error sending OTP:", error);
     throw new Error("Failed to send OTP");
   }
 };
@@ -1414,8 +1414,8 @@ app.post("/send-otp", async (req, res) => {
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
     // Find user or handyman by phone number
-    let user = await User.findOne({ contact: phoneNumber });
-    let handyman = await Handyman.findOne({ contact: phoneNumber });
+    const user = await User.findOne({ contact: phoneNumber });
+    const handyman = await Handyman.findOne({ contact: phoneNumber });
 
     if (!user && !handyman) {
       return res
@@ -1504,6 +1504,7 @@ app.post("/reset-password/:userId", async (req, res) => {
     // Update the user's password
     user.password = hashedPassword;
     await user.save();
+
 
     return res.status(200).json({ message: "Password changed successfully." });
   } catch (error) {
