@@ -14,11 +14,12 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 const PORT = process.env.PORT || 3000;
 
-// Import dotenv to load environment variables
-require('dotenv').config();
+// MongoDB connection
+const dbURI =
+  "mongodb+srv://my_database:6mAaP61jyT04DiFU@atlascluster.5hsvgm6.mongodb.net/e_handy_help?retryWrites=true&w=majority&appName=AtlasCluster";
 
 mongoose
-  .connect(process.env.MONGO_URI, {
+  .connect(dbURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -28,7 +29,6 @@ mongoose
   .catch((error) => {
     console.error("Connection error:", error);
   });
-
 
 const userSchema = new mongoose.Schema(
   {
@@ -1377,10 +1377,11 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
+
 // Send OTP to phone number
 const sendOTP = async (phoneNumber, otp) => {
   const apiKey = "6ce2d9ac9d5da878b0a9bb7b62aaddc5";
-  const apiUrl = "https://semaphore.co/api/v4/messages";
+  const apiUrl = "https://api.semaphore.co/api/v4/messages";
 
   try {
     const response = await axios.post(
