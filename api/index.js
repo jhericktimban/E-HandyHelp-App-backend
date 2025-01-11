@@ -1377,6 +1377,7 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
+
 // Send OTP to phone number
 const sendOTP = async (phoneNumber, otp) => {
   const apiKey = "6ce2d9ac9d5da878b0a9bb7b62aaddc5";
@@ -1394,8 +1395,8 @@ const sendOTP = async (phoneNumber, otp) => {
       {
         headers: {
           "Content-Type": "application/json",
-        }
-      }
+        },
+      },
     );
     return response.data; // Response from Semaphore API
   } catch (error) {
@@ -1409,7 +1410,7 @@ app.post("/send-otp", async (req, res) => {
   const { phoneNumber } = req.body;
 
   try {
-    // Generate the OTP and expiration time (5 minutes)
+    // Generate the OTP
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
@@ -1423,13 +1424,14 @@ app.post("/send-otp", async (req, res) => {
         .json({ message: "No account found with this phone number." });
     }
 
-    // Save the OTP and expiration time
+    // Save the OTP to the user's or handyman's otp_fp field
     if (user) {
-      user.otp_fp = otp;
+      user.otp_fp = otp; // Save the OTP in the user schema
       user.otp_expiry = otpExpiry;
       await user.save();
+      
     } else if (handyman) {
-      handyman.otp_fp = otp;
+      handyman.otp_fp = otp; // Save the OTP in the handyman schema
       handyman.otp_expiry = otpExpiry;
       await handyman.save();
     }
@@ -1437,7 +1439,8 @@ app.post("/send-otp", async (req, res) => {
     // Send the OTP to the phone number
     await sendOTP(phoneNumber, otp);
 
-    res.status(200).json({ message: "OTP sent successfully." });
+    // Respond with the OTP (for comparison in the UI)
+    res.status(200).json({ otp }); // Optionally, you can send back a success message instead of the OTP for security reasons
   } catch (error) {
     console.error("Error in /send-otp:", error.message);
     res
@@ -1446,69 +1449,93 @@ app.post("/send-otp", async (req, res) => {
   }
 });
 
-// API to verify OTP
 app.post("/verify-otp", async (req, res) => {
-  const { phoneNumber, otp } = req.body;
+  const { phoneNumber, otp } = req.body; // Using contact from the request body
+  console.log(phoneNumber);
+  console.log(otp);
+  try {
+    // Search in handymen collection with contact field
+    let user = await Handyman.findOne({ contact: phoneNumber }); // Ensure contact field is used
+
+    if (!user) {
+      // If not found, search in user collection with contact field
+      user = await User.findOne({ contact: phoneNumber }); // Ensure contact field is used
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "Contact number not found" }); // Updated message
+    }
+
+     // Check if OTP is valid and not expired
+     const currentTime = new Date();
+
+     if (user.otp_fp === otp && currentTime <= user.otp_expiry) {
+       return res.status(200).json({ userId: user._id, message: "OTP verified successfully." });
+     } else if (currentTime > user.otp_expiry) {
+       return res.status(400).json({ message: "OTP has expired." });
+     } else {
+       return res.status(400).json({ message: "Invalid OTP." });
+     }
+   } catch (error) {
+     console.error("Error in /verify-otp:", error.message);
+     return res
+       .status(500)
+       .json({ message: "An error occurred", error: error.message });
+   }
+ });
+
+app.post("/contact-admin", async (req, res) => {
+  const { userId, subject, details } = req.body;
+
+  if (!userId || !subject || !details) {
+    return res
+      .status(400)
+      .json({ error: "User ID, subject, and details are required" });
+  }
 
   try {
-    // Search in handymen collection first
-    let user = await Handyman.findOne({ contact: phoneNumber });
+    // Create a new contact admin entry
+    const newContactAdmin = new ContactAdmin({
+      userId, // Save userId
+      subject,
+      details,
+    });
 
-    if (!user) {
-      // If not found, search in the user collection
-      user = await User.findOne({ contact: phoneNumber });
-    }
-
-    if (!user) {
-      return res.status(404).json({ message: "Contact number not found." });
-    }
-
-    // Check if OTP is valid and not expired
-    const currentTime = new Date();
-
-    if (user.otp_fp === otp && currentTime <= user.otp_expiry) {
-      return res.status(200).json({ userId: user._id, message: "OTP verified successfully." });
-    } else if (currentTime > user.otp_expiry) {
-      return res.status(400).json({ message: "OTP has expired." });
-    } else {
-      return res.status(400).json({ message: "Invalid OTP." });
-    }
+    await newContactAdmin.save();
+    return res.status(200).json({ message: "Message sent successfully" });
   } catch (error) {
-    console.error("Error in /verify-otp:", error.message);
-    return res
-      .status(500)
-      .json({ message: "An error occurred", error: error.message });
+    console.error(error);
+    return res.status(500).json({ error: "Failed to send message" });
   }
 });
-
-// API for password reset
+// Password Reset Endpoint
 app.post("/reset-password/:userId", async (req, res) => {
   const { newPassword } = req.body;
   const { userId } = req.params;
 
   try {
-    // Check if user exists in Handyman or User collection
+    // Check if userId exists in the Handyman collection
     let user = await Handyman.findById(userId);
 
     if (!user) {
+      // If not found in Handyman, check in User collection
       user = await User.findById(userId);
     }
 
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password
-    user.password = hashedPassword;
+    user.password = hashedPassword; // Assuming password field exists
     await user.save();
 
-
-    return res.status(200).json({ message: "Password changed successfully." });
+    return res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
-    console.error("Error resetting password:", error.message);
+    console.error("Error resetting password:", error);
     return res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
