@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 const axios = require("axios"); // For making HTTP requests
 
 const app = express();
@@ -53,7 +54,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    contact: {
+    email: {
       type: String,
       required: true,
     },
@@ -183,7 +184,7 @@ app.post("/register", async (req, res) => {
     username,
     password,
     dateOfBirth,
-    contact,
+    email,
     address,
     images,
     dataPrivacyConsent,
@@ -196,7 +197,7 @@ app.post("/register", async (req, res) => {
     !username ||
     !password ||
     !dateOfBirth ||
-    !contact ||
+    !email ||
     !dataPrivacyConsent
   ) {
     return res.status(400).send("Missing required fields");
@@ -208,7 +209,7 @@ app.post("/register", async (req, res) => {
     lname,
     username,
     dateOfBirth,
-    contact,
+    email,
     address,
     dataPrivacyConsent,
   });
@@ -224,7 +225,7 @@ app.post("/register", async (req, res) => {
       username,
       password: hashedPassword,
       dateOfBirth,
-      contact,
+      email,
       address,
       images,
       dataPrivacyConsent,
@@ -280,7 +281,7 @@ const handymanSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    contact: {
+    email: {
       type: String,
       required: true,
     },
@@ -347,7 +348,7 @@ app.post("/register-handyman", async (req, res) => {
     username,
     password,
     dateOfBirth,
-    contact,
+    email,
     address,
     specialization,
     idImages,
@@ -365,7 +366,7 @@ app.post("/register-handyman", async (req, res) => {
       username,
       password: hashedPassword,
       dateOfBirth,
-      contact,
+      email,
       address,
       specialization,
       idImages,
@@ -426,7 +427,7 @@ app.post("/login-handyman", async (req, res) => {
         lname: handyman.lname,
         username: handyman.username,
         dateOfBirth: handyman.dateOfBirth,
-        contact: handyman.contact,
+        email: handyman.email,
         address: handyman.address,
         specialization: handyman.specialization,
         idImages: handyman.idImages,
@@ -467,7 +468,7 @@ app.get("/requested-profiles", async (req, res) => {
           userId: user._id,
           name: `${user.fname} ${user.lname}`,
           address: user.address,
-          contact: user.contact,
+          email: user.email,
           serviceDetails: booking.serviceDetails,
           dateOfService: formatDate(booking.dateOfService),
           serviceImages: booking.images,
@@ -532,7 +533,7 @@ app.post("/login-user", async (req, res) => {
         fname: user.fname,
         lname: user.lname,
         email: user.email,
-        contact: user.contact,
+        email: user.email,
         dateOfBirth: user.dateOfBirth,
         images: user.images,
         accounts_status: user.accounts_status,
@@ -697,14 +698,14 @@ app.post("/accept-booking", async (req, res) => {
     bookingId,
     serviceDetails,
     name,
-    contact,
+    email,
     address,
     dateOfService,
   } = req.body;
 
   try {
     // Save auto-generated chat message
-    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\nContact: ${contact},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
+    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
 
     const newChat = new Chat({
       booking_id: bookingId,
@@ -1372,55 +1373,56 @@ app.get("/feedbacks", async (req, res) => {
   }
 });
 
+
+
 // Generate a random 4-digit OTP
 const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
-// Send OTP to phone number
-const sendOTP = async (phoneNumber, otp) => {
-  const apiKey = "6ce2d9ac9d5da878b0a9bb7b62aaddc5";
-  const apiUrl = "https://api.semaphore.co/api/v4/messages";
+// Send OTP to email
+const sendOTPEmail = async (email, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: "Gmail", // Use your email service
+    auth: {
+      user: process.env.EMAIL_USER, // Replace with your email
+      pass: process.env.EMAIL_PASS, // Replace with your email password or app password
+    },
+  });
+
+  const mailOptions = {
+    from: "E-HandyHelp Team", // Sender address
+    to: email, // Receiver's email
+    subject: "Your OTP Code", // Subject line
+    text: `Your OTP is: ${otp}`, // Plain text body
+  };
 
   try {
-    const response = await axios.post(
-      apiUrl,
-      {
-        apikey: apiKey,
-        number: phoneNumber,
-        message: `Your OTP is: ${otp}`,
-        sendername: "Thesis",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        }
-      }
-    );
-    return response.data; // Response from Semaphore API
+    await transporter.sendMail(mailOptions);
+    console.log("OTP email sent successfully.");
   } catch (error) {
-    console.error("Error sending OTP:", error.message);
-    throw new Error("Failed to send OTP");
+    console.error("Error sending OTP email:", error.message);
+    throw new Error("Failed to send OTP email");
   }
 };
 
-// API to submit phone number and send OTP
+// API to submit email and send OTP
 app.post("/send-otp", async (req, res) => {
-  const { phoneNumber } = req.body;
+  const { email } = req.body;
 
   try {
     // Generate the OTP and expiration time (5 minutes)
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
-    // Find user or handyman by phone number
-    let user = await User.findOne({ contact: phoneNumber });
-    let handyman = await Handyman.findOne({ contact: phoneNumber });
+    // Find user or handyman by email
+    let user = await User.findOne({ email });
+    let handyman = await Handyman.findOne({ email });
 
     if (!user && !handyman) {
       return res
         .status(404)
-        .json({ message: "No account found with this phone number." });
+        .json({ message: "No account found with this email address." });
     }
 
     // Save the OTP and expiration time
@@ -1434,10 +1436,10 @@ app.post("/send-otp", async (req, res) => {
       await handyman.save();
     }
 
-    // Send the OTP to the phone number
-    await sendOTP(phoneNumber, otp);
+    // Send the OTP to the email
+    await sendOTPEmail(email, otp);
 
-    res.status(200).json({ otp });;
+    res.status(200).json({ message: "OTP sent successfully to your email." });
   } catch (error) {
     console.error("Error in /send-otp:", error.message);
     res
@@ -1448,26 +1450,28 @@ app.post("/send-otp", async (req, res) => {
 
 // API to verify OTP
 app.post("/verify-otp", async (req, res) => {
-  const { phoneNumber, otp } = req.body;
+  const { email, otp } = req.body;
 
   try {
     // Search in handymen collection first
-    let user = await Handyman.findOne({ contact: phoneNumber });
+    let user = await Handyman.findOne({ email });
 
     if (!user) {
       // If not found, search in the user collection
-      user = await User.findOne({ contact: phoneNumber });
+      user = await User.findOne({ email });
     }
 
     if (!user) {
-      return res.status(404).json({ message: "Contact number not found." });
+      return res.status(404).json({ message: "Email address not found." });
     }
 
     // Check if OTP is valid and not expired
     const currentTime = new Date();
 
     if (user.otp_fp === otp && currentTime <= user.otp_expiry) {
-      return res.status(200).json({ userId: user._id, message: "OTP verified successfully." });
+      return res
+        .status(200)
+        .json({ userId: user._id, message: "OTP verified successfully." });
     } else if (currentTime > user.otp_expiry) {
       return res.status(400).json({ message: "OTP has expired." });
     } else {
@@ -1480,6 +1484,7 @@ app.post("/verify-otp", async (req, res) => {
       .json({ message: "An error occurred", error: error.message });
   }
 });
+
 
 app.post("/contact-admin", async (req, res) => {
   const { userId, subject, details } = req.body;
