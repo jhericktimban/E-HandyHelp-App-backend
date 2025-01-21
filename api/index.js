@@ -1624,12 +1624,9 @@ app.post("/reset-password-handyman/:handymanId", async (req, res) => {
 
   try {
 
-    if (!Handyman) {
-      // If not found in Handyman, check in User collection
-      Handyman = await Handyman.findById(handymanId);
-    }
+    let handyman = await handyman.findById(handymanId);
 
-    if (!Handyman) {
+    if (!handyman) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -1637,8 +1634,8 @@ app.post("/reset-password-handyman/:handymanId", async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password
-    Handyman.password = hashedPassword; // Assuming password field exists
-    await Handyman.save();
+    handyman.password = hashedPassword; // Assuming password field exists
+    await handyman.save();
 
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
