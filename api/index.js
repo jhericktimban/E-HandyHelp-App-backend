@@ -1456,14 +1456,11 @@ app.post("/send-otp", async (req, res) => {
 
 // API to verify OTP
 app.post("/verify-otp", async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp_fp } = req.body;  // Adjust to match the key you send
 
   try {
-    // Search in handymen collection first
     let user = await Handyman.findOne({ email });
-
     if (!user) {
-      // If not found, search in the user collection
       user = await User.findOne({ email });
     }
 
@@ -1471,13 +1468,12 @@ app.post("/verify-otp", async (req, res) => {
       return res.status(404).json({ message: "Email address not found." });
     }
 
-    // Check if OTP is valid and not expired
     const currentTime = new Date();
-
-    if (user.otp_fp.trim() === otp.trim() && currentTime <= user.otp_expiry) {
-      return res
-        .status(200)
-        .json({ userId: user._id, message: "OTP verified successfully." });
+    console.log("Stored OTP:", user.otp_fp);
+    console.log("Entered OTP:", otp_fp);
+    
+    if (user.otp_fp.trim() === otp_fp.trim() && currentTime <= user.otp_expiry) {
+      return res.status(200).json({ userId: user._id, message: "OTP verified successfully." });
     } else if (currentTime > user.otp_expiry) {
       return res.status(400).json({ message: "OTP has expired." });
     } else {
@@ -1485,11 +1481,10 @@ app.post("/verify-otp", async (req, res) => {
     }
   } catch (error) {
     console.error("Error in /verify-otp:", error.message);
-    return res
-      .status(500)
-      .json({ message: "An error occurred", error: error.message });
+    return res.status(500).json({ message: "An error occurred", error: error.message });
   }
 });
+
 
 
 app.post("/contact-admin", async (req, res) => {
