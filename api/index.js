@@ -75,8 +75,11 @@ const userSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
-      otp_expiry: Date,
-      default: null, // Default to null if not set
+      required: true, // Make sure it's always required for OTP verification
+    },
+    otp_expiry: {
+      type: Date,
+      required: true, // Make sure the expiry date is always set
     },
     logged_in: {
       type: Number,
@@ -316,8 +319,11 @@ const handymanSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
-      otp_expiry: Date,
-      default: null, // Default to null if not set
+      required: true, // Make sure it's always required for OTP verification
+    },
+    otp_expiry: {
+      type: Date,
+      required: true, // Make sure the expiry date is always set
     },
     logged_in: {
       type: Number,
@@ -1455,25 +1461,33 @@ app.post("/send-otp", async (req, res) => {
 
 // API to verify OTP
 app.post("/verify-otp", async (req, res) => {
-  const { email, otp_fp } = req.body;  // Adjust to match the key you send
+  const { email, otp_fp } = req.body;
 
   try {
-    let user = await Handyman.findOne({ email });
-    if (!user) {
-      user = await User.findOne({ email });
-    }
-
-    if (!user) {
-      return res.status(404).json({ message: "Email address not found." });
-    }
-
-    const currentTime = new Date();
-    console.log("Stored OTP:", user.otp_fp);
-    console.log("Entered OTP:", otp_fp);
+    // Search for the user in the User collection first
+    let user = await User.findOne({ email });
     
-    if (user.otp_fp.trim() === otp_fp.trim() && currentTime <= user.otp_expiry) {
-      return res.status(200).json({ userId: user._id, message: "OTP verified successfully." });
-    } else if (currentTime > user.otp_expiry) {
+    // If not found, search in the Handyman collection
+    let handyman = user ? null : await Handyman.findOne({ email });
+
+    if (!user && !handyman) {
+      console.warn("No account found for email:", email);
+      return res
+        .status(404)
+        .json({ message: "No account found with this email address." });
+    }
+
+    // Determine the correct user (either a user or a handyman)
+    const currentUser = user || handyman;
+    const currentTime = new Date();
+
+    console.log("Stored OTP:", currentUser.otp_fp);
+    console.log("Entered OTP:", otp_fp);
+
+    // Validate OTP and check expiration time
+    if (currentUser.otp_fp.trim() === otp_fp.trim() && currentTime <= currentUser.otp_expiry) {
+      return res.status(200).json({ userId: currentUser._id, message: "OTP verified successfully." });
+    } else if (currentTime > currentUser.otp_expiry) {
       return res.status(400).json({ message: "OTP has expired." });
     } else {
       return res.status(400).json({ message: "Invalid OTP." });
