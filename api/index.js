@@ -1474,7 +1474,7 @@ app.post("/verify-otp", async (req, res) => {
     // Check if OTP is valid and not expired
     const currentTime = new Date();
 
-    if (user.otp_fp === otp && currentTime <= user.otp_expiry) {
+    if (user.otp_fp.trim() === otp.trim() && currentTime <= user.otp_expiry) {
       return res
         .status(200)
         .json({ userId: user._id, message: "OTP verified successfully." });
