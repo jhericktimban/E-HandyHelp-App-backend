@@ -1558,6 +1558,23 @@ app.post("/reset-password/:userId", async (req, res) => {
   }
 });
 
+app.post('/check-email', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email: email });
+    if (existingUser) {
+      return res.status(200).json({ available: false });
+    } else {
+      return res.status(200).json({ available: true });
+    }
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
