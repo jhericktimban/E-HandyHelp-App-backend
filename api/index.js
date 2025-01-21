@@ -1624,7 +1624,7 @@ app.post("/reset-password-handyman/:handymanId", async (req, res) => {
 
   try {
 
-    let handyman = await handyman.findById(handymanId);
+    let handyman = await Handyman.findById(handymanId);
 
     if (!handyman) {
       return res.status(404).json({ message: "User not found" });
