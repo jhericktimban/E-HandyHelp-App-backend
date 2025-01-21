@@ -287,6 +287,7 @@ const handymanSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
     address: {
       type: String,
@@ -315,6 +316,7 @@ const handymanSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
+      otp_expiry: Date,
       default: null, // Default to null if not set
     },
     logged_in: {
