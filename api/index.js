@@ -75,11 +75,11 @@ const userSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
-      required: true, // Make sure it's always required for OTP verification
+      default: null,   
     },
     otp_expiry: {
       type: Date,
-      required: true, // Make sure the expiry date is always set
+      default: null,
     },
     logged_in: {
       type: Number,
@@ -319,11 +319,11 @@ const handymanSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
-      required: true, // Make sure it's always required for OTP verification
+      default: null,    
     },
     otp_expiry: {
       type: Date,
-      required: true, // Make sure the expiry date is always set
+      default: null, // Make sure the expiry date is always set
     },
     logged_in: {
       type: Number,
