@@ -1380,31 +1380,30 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
-// Send OTP to email
-const sendOTPEmail = async (email, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "Gmail", // Use your email service
-    auth: {
-      user: process.env.EMAIL_USER, // Replace with your email
-      pass: process.env.EMAIL_PASS, // Replace with your email password or app password
-    },
-  });
-
-  const mailOptions = {
-    from: "E-HandyHelp Team", // Sender address
-    to: email, // Receiver's email
-    subject: "Your OTP Code", // Subject line
-    text: `Your OTP is: ${otp}`, // Plain text body
-  };
-
+async function sendOTPEmail(email, otp) {
   try {
-    await transporter.sendMail(mailOptions);
-    console.log("OTP email sent successfully.");
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"E-HandyHelp" <e-handyhelpteam@gmail.com>',
+      to: email,
+      subject: "Your OTP Code",
+      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+    });
+
+    console.log("OTP email sent to:", email);
   } catch (error) {
-    console.error("Error sending OTP email:", error.message);
-    throw new Error("Failed to send OTP email");
+    console.error("Error in sendOTPEmail:", error.message);
+    throw error; // Propagate the error to the calling function
   }
-};
+}
+
 
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
