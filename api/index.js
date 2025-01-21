@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+require("dotenv").config();
 const axios = require("axios"); // For making HTTP requests
 
 const app = express();
@@ -1391,7 +1392,7 @@ async function sendOTPEmail(email, otp) {
     });
 
     await transporter.sendMail({
-      from: '"E-HandyHelp" <e-handyhelpteam@gmail.com>',
+      from: '"E-HandyHelp" <jrickvillaqwe@gmail.com>',
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
