@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const MailerSend = require("@mailersend/sdk");
 require("dotenv").config();
 const axios = require("axios"); // For making HTTP requests
 
@@ -1381,29 +1382,24 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
-async function sendOTPEmail(email, otp) {
+const mailerSend = new MailerSend({
+  apiKey: "https://api.mailersend.com/v1/email",
+});
+
+const sendEmail = async (email, otp) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: '"E-HandyHelp" <jrickvillaqwe@gmail.com>',
-      to: email,
+    const response = await mailerSend.email.send({
+      from: "ehandyhelp@services.com", // Verified domain email
+      to: [email],
       subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+      html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
     });
 
-    console.log("OTP email sent to:", email);
+    console.log("Email sent:", response);
   } catch (error) {
-    console.error("Error in sendOTPEmail:", error.message);
-    throw error; // Propagate the error to the calling function
+    console.error("Error sending email:", error.message);
   }
-}
+};
 
 
 app.post("/send-otp", async (req, res) => {
