@@ -1392,7 +1392,7 @@ async function sendOTPEmail(email, otp) {
     });
 
     await transporter.sendMail({
-      from: '"E-HandyHelp" <jrickvillaqwe@gmail.com>',
+      from: '"E-HandyHelp" <ehandyhelp@services>',
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
@@ -1411,7 +1411,7 @@ app.post("/send-otp", async (req, res) => {
 
   try {
     const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+    const otpExpiry = new Date(Date.now() + 1000*60*5); // 5 minutes from now
 
     console.log("Generated OTP:", otp);
 
