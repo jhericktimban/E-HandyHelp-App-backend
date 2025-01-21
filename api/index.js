@@ -1562,8 +1562,11 @@ app.post('/check-email', async (req, res) => {
   const { email } = req.body;
 
   try {
+    // Check email in both User and Handyman collections
     const existingUser = await User.findOne({ email: email });
-    if (existingUser) {
+    const existingHandyman = await Handyman.findOne({ email: email });
+
+    if (existingUser || existingHandyman) {
       return res.status(200).json({ available: false });
     } else {
       return res.status(200).json({ available: true });
@@ -1573,7 +1576,6 @@ app.post('/check-email', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
