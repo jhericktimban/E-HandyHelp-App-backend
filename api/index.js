@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
     images: {
       type: [String],
@@ -74,6 +75,7 @@ const userSchema = new mongoose.Schema(
     },
     otp_fp: {
       type: String, // Store the OTP as a string
+      otp_expiry: Date,
       default: null, // Default to null if not set
     },
     logged_in: {
@@ -1408,6 +1410,10 @@ async function sendOTPEmail(email, otp) {
 
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required." });
+  }
 
   try {
     const otp = generateOTP();
