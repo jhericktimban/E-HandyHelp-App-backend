@@ -1415,7 +1415,7 @@ async function sendOTPEmail(email, otp_fp) {
 }
 
 
-app.post("/send-otp", async (req, res) => {
+app.post("/send-otp-user", async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -1429,9 +1429,8 @@ app.post("/send-otp", async (req, res) => {
     console.log("Generated OTP:", otp_fp);
 
     let user = await User.findOne({ email });
-    let handyman = await Handyman.findOne({ email });
 
-    if (!user && !handyman) {
+    if (!user) {
       console.warn("No account found for email:", email);
       return res
         .status(404)
@@ -1443,7 +1442,39 @@ app.post("/send-otp", async (req, res) => {
       user.otp_expiry = otpExpiry;
       await user.save();
       console.log("OTP saved for user:", user.email);
-    } else if (handyman) {
+    } 
+
+    await sendOTPEmail(email, otp_fp);
+    res.status(200).json({ message: "OTP sent successfully to your email." });
+  } catch (error) {
+    console.error("Error in /send-otp:", error.message);
+    res.status(500).json({ message: "Error sending OTP", error: error.message });
+  }
+});
+
+app.post("/send-otp-handyman", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required." });
+  }
+
+  try {
+    const otp_fp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 1000*60*5); // 5 minutes from now
+
+    console.log("Generated OTP:", otp_fp);
+
+    let handyman = await Handyman.findOne({ email });
+
+    if (!handyman) {
+      console.warn("No account found for email:", email);
+      return res
+        .status(404)
+        .json({ message: "No account found with this email address." });
+    }
+
+    if (handyman) {
       handyman.otp_fp = otp_fp;
       handyman.otp_expiry = otpExpiry;
       await handyman.save();
@@ -1460,17 +1491,15 @@ app.post("/send-otp", async (req, res) => {
 
 
 // API to verify OTP
-app.post("/verify-otp", async (req, res) => {
+app.post("/verify-otp-user", async (req, res) => {
   const { email, otp_fp } = req.body;
 
   try {
     // Search for the user in the User collection first
     let user = await User.findOne({ email });
     
-    // If not found, search in the Handyman collection
-    let handyman = user ? null : await Handyman.findOne({ email });
-
-    if (!user && !handyman) {
+  
+    if (!user) {
       console.warn("No account found for email:", email);
       return res
         .status(404)
@@ -1478,7 +1507,7 @@ app.post("/verify-otp", async (req, res) => {
     }
 
     // Determine the correct user (either a user or a handyman)
-    const currentUser = user || handyman;
+    const currentUser = user;
     const currentTime = new Date();
 
     console.log("Stored OTP:", currentUser.otp_fp);
@@ -1487,6 +1516,41 @@ app.post("/verify-otp", async (req, res) => {
     // Validate OTP and check expiration time
     if (currentUser.otp_fp.trim() === otp_fp.trim() && currentTime <= currentUser.otp_expiry) {
       return res.status(200).json({ userId: currentUser._id, message: "OTP verified successfully." });
+    } else if (currentTime > currentUser.otp_expiry) {
+      return res.status(400).json({ message: "OTP has expired." });
+    } else {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+  } catch (error) {
+    console.error("Error in /verify-otp-user:", error.message);
+    return res.status(500).json({ message: "An error occurred", error: error.message });
+  }
+});
+
+// API to verify OTP
+app.post("/verify-otp-handyman", async (req, res) => {
+  const { email, otp_fp } = req.body;
+
+  try {
+    let handyman = await Handyman.findOne({ email });
+
+    if (!handyman) {
+      console.warn("No account found for email:", email);
+      return res
+        .status(404)
+        .json({ message: "No account found with this email address." });
+    }
+
+    // Determine the correct user (either a user or a handyman)
+    const currentUser = handyman;
+    const currentTime = new Date();
+
+    console.log("Stored OTP:", currentUser.otp_fp);
+    console.log("Entered OTP:", otp_fp);
+
+    // Validate OTP and check expiration time
+    if (currentUser.otp_fp.trim() === otp_fp.trim() && currentTime <= currentUser.otp_expiry) {
+      return res.status(200).json({ handymanId: currentUser._id, message: "OTP verified successfully." });
     } else if (currentTime > currentUser.otp_expiry) {
       return res.status(400).json({ message: "OTP has expired." });
     } else {
@@ -1525,18 +1589,13 @@ app.post("/contact-admin", async (req, res) => {
   }
 });
 // Password Reset Endpoint
-app.post("/reset-password/:userId", async (req, res) => {
+app.post("/reset-password-user/:userId", async (req, res) => {
   const { newPassword } = req.body;
   const { userId } = req.params;
 
   try {
     // Check if userId exists in the Handyman collection
-    let user = await Handyman.findById(userId);
-
-    if (!user) {
-      // If not found in Handyman, check in User collection
-      user = await User.findById(userId);
-    }
+    let user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -1548,6 +1607,38 @@ app.post("/reset-password/:userId", async (req, res) => {
     // Update the user's password
     user.password = hashedPassword; // Assuming password field exists
     await user.save();
+
+    return res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+});
+
+// Password Reset Endpoint
+app.post("/reset-password-handyman/:handymanId", async (req, res) => {
+  const { newPassword } = req.body;
+  const { handymanId } = req.params;
+
+  try {
+
+    if (!Handyman) {
+      // If not found in Handyman, check in User collection
+      Handyman = await Handyman.findById(handymanId);
+    }
+
+    if (!Handyman) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    Handyman.password = hashedPassword; // Assuming password field exists
+    await Handyman.save();
 
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
