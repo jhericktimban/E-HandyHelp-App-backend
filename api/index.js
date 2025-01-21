@@ -1406,47 +1406,45 @@ const sendOTPEmail = async (email, otp) => {
   }
 };
 
-// API to submit email and send OTP
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Generate the OTP and expiration time (5 minutes)
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
-    // Find user or handyman by email
+    console.log("Generated OTP:", otp);
+
     let user = await User.findOne({ email });
     let handyman = await Handyman.findOne({ email });
 
     if (!user && !handyman) {
+      console.warn("No account found for email:", email);
       return res
         .status(404)
         .json({ message: "No account found with this email address." });
     }
 
-    // Save the OTP and expiration time
     if (user) {
       user.otp_fp = otp;
       user.otp_expiry = otpExpiry;
       await user.save();
+      console.log("OTP saved for user:", user.email);
     } else if (handyman) {
       handyman.otp_fp = otp;
       handyman.otp_expiry = otpExpiry;
       await handyman.save();
+      console.log("OTP saved for handyman:", handyman.email);
     }
 
-    // Send the OTP to the email
     await sendOTPEmail(email, otp);
-
     res.status(200).json({ message: "OTP sent successfully to your email." });
   } catch (error) {
     console.error("Error in /send-otp:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error sending OTP", error: error.message });
+    res.status(500).json({ message: "Error sending OTP", error: error.message });
   }
 });
+
 
 // API to verify OTP
 app.post("/verify-otp", async (req, res) => {
