@@ -1384,7 +1384,7 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000).toString(); // Returns a string
 };
 
-async function sendOTPEmail(email, otp) {
+async function sendOTPEmail(email, otp_fp) {
   try {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
@@ -1398,7 +1398,7 @@ async function sendOTPEmail(email, otp) {
       from: '"E-HandyHelp" <ehandyhelp@services>',
       to: email,
       subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+      text: `Your OTP code is ${otp_fp}. It will expire in 5 minutes.`,
     });
 
     console.log("OTP email sent to:", email);
@@ -1417,10 +1417,10 @@ app.post("/send-otp", async (req, res) => {
   }
 
   try {
-    const otp = generateOTP();
+    const otp_fp = generateOTP();
     const otpExpiry = new Date(Date.now() + 1000*60*5); // 5 minutes from now
 
-    console.log("Generated OTP:", otp);
+    console.log("Generated OTP:", otp_fp);
 
     let user = await User.findOne({ email });
     let handyman = await Handyman.findOne({ email });
@@ -1433,18 +1433,18 @@ app.post("/send-otp", async (req, res) => {
     }
 
     if (user) {
-      user.otp_fp = otp;
+      user.otp_fp = otp_fp;
       user.otp_expiry = otpExpiry;
       await user.save();
       console.log("OTP saved for user:", user.email);
     } else if (handyman) {
-      handyman.otp_fp = otp;
+      handyman.otp_fp = otp_fp;
       handyman.otp_expiry = otpExpiry;
       await handyman.save();
       console.log("OTP saved for handyman:", handyman.email);
     }
 
-    await sendOTPEmail(email, otp);
+    await sendOTPEmail(email, otp_fp);
     res.status(200).json({ message: "OTP sent successfully to your email." });
   } catch (error) {
     console.error("Error in /send-otp:", error.message);
