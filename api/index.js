@@ -1558,15 +1558,12 @@ app.post("/reset-password/:userId", async (req, res) => {
   }
 });
 
-app.post('/check-email', async (req, res) => {
+app.post('/check-email-user', async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Check email in both User and Handyman collections
     const existingUser = await User.findOne({ email: email });
-    const existingHandyman = await Handyman.findOne({ email: email });
-
-    if (existingUser || existingHandyman) {
+    if (existingUser) {
       return res.status(200).json({ available: false });
     } else {
       return res.status(200).json({ available: true });
@@ -1576,6 +1573,23 @@ app.post('/check-email', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+app.post('/check-email-handyman', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const existingHandyman = await Handyman.findOne({ email: email });
+    if (existingHandyman) {
+      return res.status(200).json({ available: false });
+    } else {
+      return res.status(200).json({ available: true });
+    }
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
