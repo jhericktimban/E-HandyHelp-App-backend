@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    contact: {
+      type: String,
+      required: true,
+      match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
+    },
     email: {
       type: String,
       required: true,
@@ -190,6 +195,7 @@ app.post("/register", async (req, res) => {
     username,
     password,
     dateOfBirth,
+    contact,
     email,
     address,
     images,
@@ -203,6 +209,7 @@ app.post("/register", async (req, res) => {
     !username ||
     !password ||
     !dateOfBirth ||
+    !contact ||
     !email ||
     !dataPrivacyConsent
   ) {
@@ -215,6 +222,7 @@ app.post("/register", async (req, res) => {
     lname,
     username,
     dateOfBirth,
+    contact,
     email,
     address,
     dataPrivacyConsent,
@@ -231,6 +239,7 @@ app.post("/register", async (req, res) => {
       username,
       password: hashedPassword,
       dateOfBirth,
+      contact,
       email,
       address,
       images,
@@ -286,6 +295,11 @@ const handymanSchema = new mongoose.Schema(
     dateOfBirth: {
       type: Date,
       required: true,
+    },
+    contact: {
+      type: String,
+      required: true,
+      match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
     },
     email: {
       type: String,
@@ -359,6 +373,7 @@ app.post("/register-handyman", async (req, res) => {
     username,
     password,
     dateOfBirth,
+    contact,
     email,
     address,
     specialization,
@@ -377,6 +392,7 @@ app.post("/register-handyman", async (req, res) => {
       username,
       password: hashedPassword,
       dateOfBirth,
+      contact,
       email,
       address,
       specialization,
@@ -438,6 +454,7 @@ app.post("/login-handyman", async (req, res) => {
         lname: handyman.lname,
         username: handyman.username,
         dateOfBirth: handyman.dateOfBirth,
+        contact: handyman.contact,
         email: handyman.email,
         address: handyman.address,
         specialization: handyman.specialization,
@@ -479,6 +496,7 @@ app.get("/requested-profiles", async (req, res) => {
           userId: user._id,
           name: `${user.fname} ${user.lname}`,
           address: user.address,
+          contact: user.contact,
           email: user.email,
           serviceDetails: booking.serviceDetails,
           dateOfService: formatDate(booking.dateOfService),
@@ -543,8 +561,9 @@ app.post("/login-user", async (req, res) => {
         username: username,
         fname: user.fname,
         lname: user.lname,
-        email: user.email,
         dateOfBirth: user.dateOfBirth,
+        email: user.email,
+        contact: user.contact,
         images: user.images,
         accounts_status: user.accounts_status,
         logged_in: user.logged_in, // Include logged_in status in response
@@ -708,6 +727,7 @@ app.post("/accept-booking", async (req, res) => {
     bookingId,
     serviceDetails,
     name,
+    contact,
     email,
     address,
     dateOfService,
@@ -715,7 +735,7 @@ app.post("/accept-booking", async (req, res) => {
 
   try {
     // Save auto-generated chat message
-    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
+    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\ncontact: ${contact},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
 
     const newChat = new Chat({
       booking_id: bookingId,
