@@ -1702,7 +1702,7 @@ app.post('/check-email-handyman', async (req, res) => {
 app.post('/change-password-user', async (req, res) => {
   const { userId, currentPassword, newPassword } = req.body;
 
-  if (!userId || !currentPassword || !newPassword) {
+  if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
