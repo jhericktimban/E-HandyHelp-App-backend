@@ -1698,7 +1698,8 @@ app.post('/check-email-handyman', async (req, res) => {
   }
 });
 
-// Change Password API
+
+
 app.post('/change-password-user', async (req, res) => {
   const { userId, currentPassword, newPassword } = req.body;
 
@@ -1706,23 +1707,22 @@ app.post('/change-password-user', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: 'Invalid user ID.' });
+  }
+
   try {
-    // Find the user by ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Verify the current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Current password is incorrect.' });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password
     user.password = hashedPassword;
     await user.save();
 
