@@ -1421,7 +1421,7 @@ async function sendOTPEmail(email, otp_fp) {
     });
 
     await transporter.sendMail({
-      from: '"E-HandyHelp Team" <${process.env.EMAIL_USER}>',
+      from: '"E-HandyHelp Team" <ehandyhelpteam@gmail.com>',
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp_fp}. It will expire in 5 minutes.`,
