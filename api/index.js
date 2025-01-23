@@ -1698,6 +1698,76 @@ app.post('/check-email-handyman', async (req, res) => {
   }
 });
 
+// Change Password API
+app.post('/change-password-user', async (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body;
+
+  if (!userId || !currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Verify the current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Error in /change-password-user:', error.message);
+    res.status(500).json({ message: 'An error occurred.', error: error.message });
+  }
+});
+
+// Change Password API
+app.post('/change-password-handyman', async (req, res) => {
+  const { handymanId, currentPassword, newPassword } = req.body;
+
+  if (!handymanId || !currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    // Find the user by ID
+    const handyman = await Handyman.findById(handymanId);
+    if (!handyman) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Verify the current password
+    const isMatch = await bcrypt.compare(currentPassword, handyman.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    handyman.password = hashedPassword;
+    await handyman.save();
+
+    res.status(200).json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Error in /change-password-user:', error.message);
+    res.status(500).json({ message: 'An error occurred.', error: error.message });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
