@@ -193,7 +193,7 @@ const multer = require('multer');
 
 // Set storage engine before initializing upload
 const storage = multer.diskStorage({
-  destination: (_req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, 'uploads/'); // Specify the directory for storing the files
   },
   filename: (_req, file, cb) => {
