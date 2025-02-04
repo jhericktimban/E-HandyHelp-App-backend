@@ -7,6 +7,7 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
+const multer = require('multer');
 
 
 // Set up Multer storage
