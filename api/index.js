@@ -8,6 +8,18 @@ const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
 
+
+// Set up Multer storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // Save files to 'uploads' directory
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname)); // Unique file name
+  },
+});
+
+const upload = multer({ storage: storage });
 const app = express();
 
 app.use(cors());
@@ -32,71 +44,7 @@ mongoose
     console.error("Connection error:", error);
   });
 
-const userSchema = new mongoose.Schema(
-  {
-    fname: {
-      type: String,
-      required: true,
-    },
-    lname: {
-      type: String,
-      required: true,
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true, // Ensure usernames are unique
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    dateOfBirth: {
-      type: Date,
-      required: true,
-    },
-    contact: {
-      type: String,
-      required: true,
-      match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    images: {
-      type: [String],
-      default: [],
-    },
-    dataPrivacyConsent: {
-      type: Boolean,
-      required: true,
-    },
-    accounts_status: {
-      type: String,
-      enum: ["pending", "verified", "rejected"],
-      default: "pending",
-    },
-    otp_fp: {
-      type: String, // Store the OTP as a string
-      default: null,   
-    },
-    otp_expiry: {
-      type: Date,
-      default: null,
-    },
-    logged_in: {
-      type: Number,
-      default: 0, // Default to 0, meaning not logged in
-    },
-  },
-  {
-    timestamps: true,
-  },
-);
 
-const User = mongoose.model("User", userSchema);
 
 // Chat Schema
 const chatSchema = new mongoose.Schema({
@@ -188,7 +136,73 @@ app.post("/logout-handyman", async (req, res) => {
 
 const ContactAdmin = mongoose.model("ContactAdmin", ContactAdminSchema);
 
-app.post("/register", async (req, res) => {
+const userSchema = new mongoose.Schema(
+  {
+    fname: {
+      type: String,
+      required: true,
+    },
+    lname: {
+      type: String,
+      required: true,
+    },
+    username: {
+      type: String,
+      required: true,
+      unique: true, // Ensure usernames are unique
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    dateOfBirth: {
+      type: Date,
+      required: true,
+    },
+    contact: {
+      type: String,
+      required: true,
+      match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    images: {
+      type: [String],
+      default: [],
+    },
+    dataPrivacyConsent: {
+      type: Boolean,
+      required: true,
+    },
+    accounts_status: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
+    otp_fp: {
+      type: String, // Store the OTP as a string
+      default: null,   
+    },
+    otp_expiry: {
+      type: Date,
+      default: null,
+    },
+    logged_in: {
+      type: Number,
+      default: 0, // Default to 0, meaning not logged in
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+const User = mongoose.model("User", userSchema);
+
+app.post("/register", upload.single("image"), async (req, res) => {
   const {
     fname,
     lname,
@@ -198,11 +212,9 @@ app.post("/register", async (req, res) => {
     contact,
     email,
     address,
-    images,
     dataPrivacyConsent,
   } = req.body;
 
-  // Validate required fields
   if (
     !fname ||
     !lname ||
@@ -216,7 +228,6 @@ app.post("/register", async (req, res) => {
     return res.status(400).send("Missing required fields");
   }
 
-  // Log incoming request data
   console.log("Incoming registration request:", {
     fname,
     lname,
@@ -229,9 +240,12 @@ app.post("/register", async (req, res) => {
   });
 
   try {
-    // Password hashing
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Hashed password:", hashedPassword);
+
+    // Store image URL if uploaded
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const user = new User({
       fname,
@@ -242,31 +256,23 @@ app.post("/register", async (req, res) => {
       contact,
       email,
       address,
-      images,
+      images: imageUrl ? [imageUrl] : [], // Store URL instead of Base64
       dataPrivacyConsent,
     });
 
-    // Log before saving to the database
-    console.log("Attempting to save user to the database:", user);
-
-    // Save the new user to the database
+    console.log("Attempting to save user:", user);
     await user.save();
-
-    // Log successful registration
     console.log(`User registered successfully: ${username}`);
 
     res.status(201).send("User registered successfully");
   } catch (error) {
-    // Log the error for debugging
     console.error("Error registering user:", error.message);
     console.error("Complete error object:", error);
 
-    // Handle specific validation errors
     if (error.name === "ValidationError") {
       return res.status(400).send("Validation error: " + error.message);
     }
 
-    // Send a generic error message back to the client
     res.status(500).send("Error registering user");
   }
 });
@@ -1697,7 +1703,6 @@ app.post('/check-email-handyman', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 
 app.post('/change-password-user', async (req, res) => {
