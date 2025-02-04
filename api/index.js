@@ -7,20 +7,6 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
-const fs = require('fs');
-const path = './uploads';
-
-if (!fs.existsSync(path)) {
-  fs.mkdirSync(path);
-}
-
-
-const multer = require('multer');
-
-
-
-// Initialize upload with storage settings
-const upload = multer({ storage: storage });
 
 const app = express();
 
@@ -203,15 +189,28 @@ const userSchema = new mongoose.Schema(
 );
 
 const User = mongoose.model("User", userSchema);
-// Set storage engine
+const multer = require('multer');
+
+// Set storage engine before initializing upload
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Directory to save uploaded files
+  destination: (_req, file, cb) => {
+    cb(null, 'uploads/'); // Specify the directory for storing the files
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname); // Generate unique file name
+  filename: (_req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname); // Generate unique filename
   }
 });
+
+// Initialize multer upload with the storage engine
+const upload = multer({ storage: storage });
+
+// Ensure the 'uploads' directory exists
+const fs = require('fs');
+const path = './uploads';
+if (!fs.existsSync(path)) {
+  fs.mkdirSync(path);
+}
+
 app.post("/register", upload.single("image"), async (req, res) => {
   const { fname, lname, username, password, dateOfBirth, contact, email, dataPrivacyConsent } = req.body;
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : null; // Store file path
