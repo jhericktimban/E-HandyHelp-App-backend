@@ -212,7 +212,7 @@ if (!fs.existsSync(path)) {
 }
 
 app.post("/register", upload.single("image"), async (req, res) => {
-  const { fname, lname, username, password, dateOfBirth, contact, email, dataPrivacyConsent } = req.body;
+  const { fname, lname, username, password, dateOfBirth, contact, email,address, dataPrivacyConsent } = req.body;
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : null; // Store file path
 
   // Validate required fields
@@ -224,6 +224,7 @@ app.post("/register", upload.single("image"), async (req, res) => {
     !dateOfBirth ||
     !contact ||
     !email ||
+    !address ||
     !dataPrivacyConsent
   ) {
     return res.status(400).send("Missing required fields");
