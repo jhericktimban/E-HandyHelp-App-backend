@@ -7,20 +7,9 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
-const multer = require('multer');
 
 
-// Set up Multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Save files to 'uploads' directory
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Unique file name
-  },
-});
 
-const upload = multer({ storage: storage });
 const app = express();
 
 app.use(cors());
@@ -203,7 +192,7 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model("User", userSchema);
 
-app.post("/register", upload.single("image"), async (req, res) => {
+app.post("/register", async (req, res) => {
   const {
     fname,
     lname,
@@ -213,9 +202,11 @@ app.post("/register", upload.single("image"), async (req, res) => {
     contact,
     email,
     address,
+    images,
     dataPrivacyConsent,
   } = req.body;
 
+  // Validate required fields
   if (
     !fname ||
     !lname ||
@@ -229,6 +220,7 @@ app.post("/register", upload.single("image"), async (req, res) => {
     return res.status(400).send("Missing required fields");
   }
 
+  // Log incoming request data
   console.log("Incoming registration request:", {
     fname,
     lname,
@@ -241,12 +233,9 @@ app.post("/register", upload.single("image"), async (req, res) => {
   });
 
   try {
-    // Hash password
+    // Password hashing
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Hashed password:", hashedPassword);
-
-    // Store image URL if uploaded
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const user = new User({
       fname,
@@ -257,23 +246,31 @@ app.post("/register", upload.single("image"), async (req, res) => {
       contact,
       email,
       address,
-      images: imageUrl ? [imageUrl] : [], // Store URL instead of Base64
+      images,
       dataPrivacyConsent,
     });
 
-    console.log("Attempting to save user:", user);
+    // Log before saving to the database
+    console.log("Attempting to save user to the database:", user);
+
+    // Save the new user to the database
     await user.save();
+
+    // Log successful registration
     console.log(`User registered successfully: ${username}`);
 
     res.status(201).send("User registered successfully");
   } catch (error) {
+    // Log the error for debugging
     console.error("Error registering user:", error.message);
     console.error("Complete error object:", error);
 
+    // Handle specific validation errors
     if (error.name === "ValidationError") {
       return res.status(400).send("Validation error: " + error.message);
     }
 
+    // Send a generic error message back to the client
     res.status(500).send("Error registering user");
   }
 });
