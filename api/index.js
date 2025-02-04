@@ -8,6 +8,8 @@ const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
 
+
+
 const app = express();
 
 app.use(cors());
@@ -189,31 +191,20 @@ const userSchema = new mongoose.Schema(
 );
 
 const User = mongoose.model("User", userSchema);
-const multer = require('multer');
 
-// Set storage engine before initializing upload
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, 'uploads/'); // Specify the directory for storing the files
-  },
-  filename: (_req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname); // Generate unique filename
-  }
-});
-
-// Initialize multer upload with the storage engine
-const upload = multer({ storage: storage });
-
-// Ensure the 'uploads' directory exists
-const fs = require('fs');
-const path = './uploads';
-if (!fs.existsSync(path)) {
-  fs.mkdirSync(path);
-}
-
-app.post("/register", upload.single("image"), async (req, res) => {
-  const { fname, lname, username, password, dateOfBirth, contact, email,address, dataPrivacyConsent } = req.body;
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null; // Store file path
+app.post("/register", async (req, res) => {
+  const {
+    fname,
+    lname,
+    username,
+    password,
+    dateOfBirth,
+    contact,
+    email,
+    address,
+    images,
+    dataPrivacyConsent,
+  } = req.body;
 
   // Validate required fields
   if (
@@ -224,7 +215,6 @@ app.post("/register", upload.single("image"), async (req, res) => {
     !dateOfBirth ||
     !contact ||
     !email ||
-    !address ||
     !dataPrivacyConsent
   ) {
     return res.status(400).send("Missing required fields");
@@ -256,7 +246,7 @@ app.post("/register", upload.single("image"), async (req, res) => {
       contact,
       email,
       address,
-      images: imageUrl ? [imageUrl] : [],
+      images,
       dataPrivacyConsent,
     });
 
