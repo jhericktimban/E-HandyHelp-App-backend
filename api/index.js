@@ -318,7 +318,7 @@ const handymanSchema = new mongoose.Schema(
       type: [String], // Array of strings
       required: true,
     },
-    idImages: {
+    images: {
       type: [String], // Array of strings for image paths
       default: [],
     },
@@ -356,9 +356,6 @@ const handymanSchema = new mongoose.Schema(
 
 const Handyman = mongoose.model("Handyman", handymanSchema);
 
-app.get("/", (req, res) => {
-  res.send("Hello, World!");
-});
 // Get all verified handymen
 app.get("/profiles", async (req, res) => {
   try {
@@ -381,7 +378,7 @@ app.post("/register-handyman", async (req, res) => {
     email,
     address,
     specialization,
-    idImages,
+    images,
     certificatesImages,
     dataPrivacyConsent,
   } = req.body;
@@ -400,7 +397,7 @@ app.post("/register-handyman", async (req, res) => {
       email,
       address,
       specialization,
-      idImages,
+      images,
       certificatesImages,
       dataPrivacyConsent,
     });
@@ -462,7 +459,7 @@ app.post("/login-handyman", async (req, res) => {
         email: handyman.email,
         address: handyman.address,
         specialization: handyman.specialization,
-        idImages: handyman.idImages,
+        images: handyman.images,
         certificatesImages: handyman.certificatesImages,
         dataPrivacyConsent: handyman.dataPrivacyConsent,
         accounts_status: handyman.accounts_status,
