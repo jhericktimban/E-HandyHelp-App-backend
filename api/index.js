@@ -192,19 +192,9 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model("User", userSchema);
 
-app.post("/register", async (req, res) => {
-  const {
-    fname,
-    lname,
-    username,
-    password,
-    dateOfBirth,
-    contact,
-    email,
-    address,
-    images,
-    dataPrivacyConsent,
-  } = req.body;
+app.post("/register", upload.single("image"), async (req, res) => {
+  const { fname, lname, username, password, dateOfBirth, contact, email, dataPrivacyConsent } = req.body;
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null; // Store file path
 
   // Validate required fields
   if (
@@ -246,7 +236,7 @@ app.post("/register", async (req, res) => {
       contact,
       email,
       address,
-      images,
+      images: imageUrl ? [imageUrl] : [],
       dataPrivacyConsent,
     });
 
