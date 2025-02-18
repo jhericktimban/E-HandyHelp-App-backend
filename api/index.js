@@ -154,6 +154,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
     },
+    address: {
+      type: String,
+      required: true,
+    },
     email: {
       type: String,
       required: true,
@@ -214,6 +218,7 @@ app.post("/register", async (req, res) => {
     !password ||
     !dateOfBirth ||
     !contact ||
+    !address ||
     !email ||
     !dataPrivacyConsent
   ) {
