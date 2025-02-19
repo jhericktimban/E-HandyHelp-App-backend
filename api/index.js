@@ -326,6 +326,7 @@ const handymanSchema = new mongoose.Schema(
     images: {
       type: [String], // Array of strings for image paths
       default: [],
+      required: true,
     },
     certificatesImages: {
       type: [String], // Array of strings for certificate image paths
