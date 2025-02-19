@@ -154,10 +154,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid contact number'],
     },
-    address: {
-      type: String,
-      required: true,
-    },
     email: {
       type: String,
       required: true,
@@ -218,7 +214,6 @@ app.post("/register", async (req, res) => {
     !password ||
     !dateOfBirth ||
     !contact ||
-    !address ||
     !email ||
     !dataPrivacyConsent
   ) {
@@ -323,7 +318,7 @@ const handymanSchema = new mongoose.Schema(
       type: [String], // Array of strings
       required: true,
     },
-    images: {
+    idImages: {
       type: [String], // Array of strings for image paths
       default: [],
     },
@@ -361,6 +356,7 @@ const handymanSchema = new mongoose.Schema(
 
 const Handyman = mongoose.model("Handyman", handymanSchema);
 
+
 // Get all verified handymen
 app.get("/profiles", async (req, res) => {
   try {
@@ -383,7 +379,7 @@ app.post("/register-handyman", async (req, res) => {
     email,
     address,
     specialization,
-    images,
+    idImages,
     certificatesImages,
     dataPrivacyConsent,
   } = req.body;
@@ -402,7 +398,7 @@ app.post("/register-handyman", async (req, res) => {
       email,
       address,
       specialization,
-      images,
+      idImages,
       certificatesImages,
       dataPrivacyConsent,
     });
@@ -464,7 +460,7 @@ app.post("/login-handyman", async (req, res) => {
         email: handyman.email,
         address: handyman.address,
         specialization: handyman.specialization,
-        images: handyman.images,
+        idImages: handyman.idImages,
         certificatesImages: handyman.certificatesImages,
         dataPrivacyConsent: handyman.dataPrivacyConsent,
         accounts_status: handyman.accounts_status,
