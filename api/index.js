@@ -159,6 +159,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    address: {
+      type: String,
+      required: true,
+    },
     images: {
       type: [String],
       default: [],
@@ -215,6 +219,7 @@ app.post("/register", async (req, res) => {
     !dateOfBirth ||
     !contact ||
     !email ||
+    !address ||
     !dataPrivacyConsent
   ) {
     return res.status(400).send("Missing required fields");
