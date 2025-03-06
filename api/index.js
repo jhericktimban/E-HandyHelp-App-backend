@@ -964,7 +964,7 @@ app.post("/api/send-message", async (req, res) => {
 });
 
 // Get user notifications
-app.get("/api/notifications/:userId", async (req, res) => {
+app.get("/api/usernotifications/:userId", async (req, res) => {
   try {
     const notifications = await Notification.find({
       userId: req.params.userId,
