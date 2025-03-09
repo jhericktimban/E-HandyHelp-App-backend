@@ -625,7 +625,7 @@ app.post("/api/bookings", async (req, res) => {
     await newBooking.save();
 
     // Create a notification for the handyman
-    const notificationContent = `You have a new booking request for the service: ${serviceDetails}.`;
+    const notificationContent = `You have a new booking request`;
 
     const newNotification = new Notification({
       handymanId,
@@ -1253,7 +1253,7 @@ app.post("/reports", async (req, res) => {
     const notification = new Notification({
       handymanId: booking.handymanId, // Get handymanId from the booking
       userId: booking.userId, // Get userId from the booking
-      notification_content: `You have been reported by a ${reported_by}!`, // Notification content
+      notification_content: `You have been reported!`, // Notification content
       notif_for: notif_for, // Who the notification is for (based on above logic)
       date_sent: new Date(), // Current date
     });
