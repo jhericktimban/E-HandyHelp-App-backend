@@ -625,7 +625,7 @@ app.post("/api/bookings", async (req, res) => {
     await newBooking.save();
 
     // Create a notification for the handyman
-    const notificationContent = `You have a new booking request`;
+    const notificationContent = `You have a new booking request for the service: ${serviceDetails}.`;
 
     const newNotification = new Notification({
       handymanId,
@@ -963,6 +963,7 @@ app.post("/api/send-message", async (req, res) => {
   }
 });
 
+// Get user notifications
 app.get("/api/usernotifications/:userId", async (req, res) => {
   try {
     const notifications = await Notification.find({
@@ -971,11 +972,24 @@ app.get("/api/usernotifications/:userId", async (req, res) => {
     });
 
     const notificationsWithDetails = await Promise.all(
-      notifications.map(async (notification) => ({
-        title: notification.notification_content,
-        description: notification.notification_content, // Removed user/handyman name
-        date: notification.date_sent,
-      }))
+      notifications.map(async (notification) => {
+        if (!notification.userId) {
+          return {
+            title: notification.notification_content,
+            description: notification.notification_content,
+            date: notification.date_sent,
+          };
+        }
+
+        const user = await User.findById(notification.userId);
+        return {
+          title: notification.notification_content,
+          description: user
+            ? `${user.fname} ${user.lname} ${notification.notification_content}`
+            : notification.notification_content,
+          date: notification.date_sent,
+        };
+      })
     );
 
     res.json(notificationsWithDetails);
@@ -984,21 +998,26 @@ app.get("/api/usernotifications/:userId", async (req, res) => {
   }
 });
 
-// Get all notifications for handyman
+
 // Get all notifications for handyman
 app.get("/api/handynotifications/:handymanId", async (req, res) => {
   try {
+    // Fetch notifications where 'notif_for' is 'handyman' and matching handyman ID
     const notifications = await Notification.find({
       handymanId: req.params.handymanId,
       notif_for: "handyman",
     });
 
+    // Populate handyman details for each notification
     const notificationsWithDetails = await Promise.all(
-      notifications.map(async (notification) => ({
-        title: notification.notification_content,
-        description: notification.notification_content, // Removed user/handyman name
-        date: notification.date_sent,
-      }))
+      notifications.map(async (notification) => {
+        const handyman = await Handyman.findById(notification.handymanId);
+        return {
+          title: notification.notification_content,
+          description: `${handyman.fname} ${handyman.lname} - ${notification.notification_content}`,
+          date: notification.date_sent,
+        };
+      }),
     );
 
     res.json(notificationsWithDetails);
@@ -1006,8 +1025,6 @@ app.get("/api/handynotifications/:handymanId", async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
-
-
 
 // Endpoint to fetch messages grouped by booking_id
 app.get("/api/user-messages", async (req, res) => {
@@ -1227,7 +1244,7 @@ app.post("/reports", async (req, res) => {
     const notification = new Notification({
       handymanId: booking.handymanId, // Get handymanId from the booking
       userId: booking.userId, // Get userId from the booking
-      notification_content: `You have been reported!`, // Notification content
+      notification_content: `You have been reported by a ${reported_by}!`, // Notification content
       notif_for: notif_for, // Who the notification is for (based on above logic)
       date_sent: new Date(), // Current date
     });
