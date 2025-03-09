@@ -964,6 +964,7 @@ app.post("/api/send-message", async (req, res) => {
 });
 
 // Get user notifications
+// Get user notifications
 app.get("/api/usernotifications/:userId", async (req, res) => {
   try {
     const notifications = await Notification.find({
@@ -972,24 +973,11 @@ app.get("/api/usernotifications/:userId", async (req, res) => {
     });
 
     const notificationsWithDetails = await Promise.all(
-      notifications.map(async (notification) => {
-        if (!notification.userId) {
-          return {
-            title: notification.notification_content,
-            description: notification.notification_content,
-            date: notification.date_sent,
-          };
-        }
-
-        const user = await User.findById(notification.userId);
-        return {
-          title: notification.notification_content,
-          description: user
-            ? `${user.fname} ${user.lname} ${notification.notification_content}`
-            : notification.notification_content,
-          date: notification.date_sent,
-        };
-      })
+      notifications.map(async (notification) => ({
+        title: notification.notification_content,
+        description: notification.notification_content, // Removed user/handyman name
+        date: notification.date_sent,
+      }))
     );
 
     res.json(notificationsWithDetails);
@@ -998,26 +986,20 @@ app.get("/api/usernotifications/:userId", async (req, res) => {
   }
 });
 
-
 // Get all notifications for handyman
 app.get("/api/handynotifications/:handymanId", async (req, res) => {
   try {
-    // Fetch notifications where 'notif_for' is 'handyman' and matching handyman ID
     const notifications = await Notification.find({
       handymanId: req.params.handymanId,
       notif_for: "handyman",
     });
 
-    // Populate handyman details for each notification
     const notificationsWithDetails = await Promise.all(
-      notifications.map(async (notification) => {
-        const handyman = await Handyman.findById(notification.handymanId);
-        return {
-          title: notification.notification_content,
-          description: `${handyman.fname} ${handyman.lname} - ${notification.notification_content}`,
-          date: notification.date_sent,
-        };
-      }),
+      notifications.map(async (notification) => ({
+        title: notification.notification_content,
+        description: notification.notification_content, // Removed user/handyman name
+        date: notification.date_sent,
+      }))
     );
 
     res.json(notificationsWithDetails);
