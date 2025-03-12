@@ -184,10 +184,8 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    logged_in: {
-      type: Number,
-      default: 0, // Default to 0, meaning not logged in
-    },
+    isLoggedIn: { type: Boolean, default: false },
+    lastActive: { type: Date, default: Date.now } // Track last active time
   },
   {
     timestamps: true,
@@ -349,10 +347,14 @@ const handymanSchema = new mongoose.Schema(
       type: Date,
       default: null, // Make sure the expiry date is always set
     },
-    logged_in: {
-      type: Number,
-      default: 0, // Default to 0, meaning not logged in
-    },
+    isLoggedIn: { 
+      type: Boolean, 
+      default: false 
+    }, 
+    lastActive: { 
+      type: Date, 
+      default: Date.now 
+    } // Track last active time
   },
   {
     timestamps: true, // Automatically create createdAt and updatedAt fields
@@ -532,7 +534,7 @@ app.post("/login-user", async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
-      console.log("User not found:", username);
+      console.warn(`Login failed: Invalid username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
@@ -542,7 +544,7 @@ app.post("/login-user", async (req, res) => {
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log("Password mismatch for user:", username);
+      console.warn(`Login failed: Invalid username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
@@ -1767,6 +1769,8 @@ app.post('/change-password-handyman', async (req, res) => {
     res.status(500).json({ message: 'An error occurred.', error: error.message });
   }
 });
+
+
 
 
 app.listen(PORT, () => {
