@@ -184,8 +184,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    isLoggedIn: { type: Boolean, default: false },
-    lastActive: { type: Date, default: Date.now } // Track last active time
+    logged_in: {
+      type: Number,
+      default: 0, // Default to 0, meaning not logged in
+    },
   },
   {
     timestamps: true,
@@ -347,14 +349,10 @@ const handymanSchema = new mongoose.Schema(
       type: Date,
       default: null, // Make sure the expiry date is always set
     },
-    isLoggedIn: { 
-      type: Boolean, 
-      default: false 
-    }, 
-    lastActive: { 
-      type: Date, 
-      default: Date.now 
-    } // Track last active time
+    logged_in: {
+      type: Number,
+      default: 0, // Default to 0, meaning not logged in
+    },
   },
   {
     timestamps: true, // Automatically create createdAt and updatedAt fields
@@ -1770,15 +1768,7 @@ app.post('/change-password-handyman', async (req, res) => {
   }
 });
 
-// Example endpoint in Node.js
-app.get('/api/bookings/booked-slots', async (req, res) => {
-  const { handymanId } = req.query;
-  const bookings = await Booking.find({ handymanId });
-  const bookedSlots = bookings.map((booking) =>
-    moment(booking.dateOfService).format('hh:mm A')
-  );
-  res.json({ bookedSlots });
-});
+
 
 
 
