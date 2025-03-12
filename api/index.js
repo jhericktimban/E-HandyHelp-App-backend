@@ -1770,6 +1770,17 @@ app.post('/change-password-handyman', async (req, res) => {
   }
 });
 
+// Example endpoint in Node.js
+app.get('/api/bookings/booked-slots', async (req, res) => {
+  const { handymanId } = req.query;
+  const bookings = await Booking.find({ handymanId });
+  const bookedSlots = bookings.map((booking) =>
+    moment(booking.dateOfService).format('hh:mm A')
+  );
+  res.json({ bookedSlots });
+});
+
+
 
 
 
