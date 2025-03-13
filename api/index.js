@@ -533,8 +533,6 @@ app.post("/login-user", async (req, res) => {
       return res.status(403).json({ message: `Your account status is: ${user.accounts_status}` });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
     // Fast status update using `updateOne()` for better performance
     await User.updateOne({ _id: user._id }, { $set: { logged_in: 1 } });
 
