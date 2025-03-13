@@ -811,58 +811,75 @@ const ObjectId = mongoose.Types.ObjectId; // Mongoose's ObjectId constructor
 // Endpoint to fetch messages grouped by booking_id
 app.get("/api/messages", async (req, res) => {
   try {
+    // Extract handymanId from query parameters
     const handymanId = req.query.handymanId;
-    if (!handymanId || !ObjectId.isValid(handymanId)) {
-      return res.status(400).json({ message: "Invalid handymanId" });
+    console.log(handymanId);
+    // Validate handymanId
+    if (!handymanId) {
+      return res.status(400).json({ message: "handymanId is required" });
+    }
+
+    // Ensure handymanId is a valid ObjectId
+    if (!ObjectId.isValid(handymanId)) {
+      return res.status(400).json({ message: "Invalid handymanId format" });
     }
 
     const messages = await Chat.aggregate([
-      { $match: { handyman_id: handymanId } },
+      {
+        $match: {
+          handyman_id: handymanId, // Filter by handymanId
+        },
+      },
       {
         $group: {
           _id: {
-            user_id: { $toObjectId: "$user_id" },
+            user_id: { $toObjectId: "$user_id" }, // Convert user_id to ObjectId
             handyman_id: "$handyman_id",
             booking_id: "$booking_id",
           },
           last_message: { $last: "$contents" },
-          lastMessageTime: { $max: "$date_sent" }, // Track the latest message date
+          date_sent: { $last: "$date_sent" },
         },
       },
       {
         $lookup: {
           from: "users",
           localField: "_id.user_id",
-          foreignField: "_id",
+          foreignField: "_id", // Assuming user_id in users collection is an ObjectId
           as: "user_details",
         },
       },
-      { $unwind: { path: "$user_details", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$user_details",
+          preserveNullAndEmptyArrays: true, // Preserve documents with no user details
+        },
+      },
       {
         $project: {
           user_id: "$_id.user_id",
           handyman_id: "$_id.handyman_id",
           booking_id: "$_id.booking_id",
-          last_message: { $substr: ["$last_message", 0, 25] },
+          last_message: { $substr: ["$last_message", 0, 25] }, // Adjust length if necessary
           userFirstName: "$user_details.fname",
           userLastName: "$user_details.lname",
-          lastMessageTime: 1,
+          date_sent: "$date_sent",
         },
       },
-      { $sort: { lastMessageTime: -1 } }, // Sort by most recent activity
+      { $sort: { date_sent: -1 } }, // Sort messages by date_sent in descending order
     ]);
 
+    // Handle empty results
     if (!messages.length) {
       return res.status(404).json({ message: "No messages found" });
     }
 
     res.json(messages);
   } catch (error) {
-    console.error("Error fetching messages:", error);
+    console.error("Error fetching messages:", error); // Log the error for debugging
     res.status(500).json({ error: "Error fetching messages" });
   }
 });
-
 
 app.get("/api/conversation/:bookingId", async (req, res) => {
   const bookingId = req.params.bookingId;
@@ -924,16 +941,20 @@ app.post("/api/send-message", async (req, res) => {
   }
 
   try {
+    // Create a new message
     const newMessage = new Chat({
       contents,
       handyman_id,
       user_id,
       booking_id,
-      sender: "handy",
-      date_sent: new Date(), // Add a timestamp for sorting
+      sender: "handy", // Assuming it's the handyman sending the message
     });
 
+    // Save the message in the database
     await newMessage.save();
+
+    // Optionally, you can fetch the related user details here if needed
+    // and include that in the response if you want to display it immediately
 
     res.status(200).json(newMessage);
   } catch (error) {
@@ -941,7 +962,6 @@ app.post("/api/send-message", async (req, res) => {
     res.status(500).json({ error: "Failed to send message" });
   }
 });
-
 
 // Get user notifications
 // Get user notifications
