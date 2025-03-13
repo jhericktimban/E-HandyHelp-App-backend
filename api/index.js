@@ -450,7 +450,6 @@ app.post("/login-handyman", async (req, res) => {
     console.log(`[${new Date().toISOString()}] Login successful for ${username}`);
 
     res.json({
-      token,
       handyman: {
         id: handyman._id,
         fname: handyman.fname,
@@ -539,7 +538,6 @@ app.post("/login-user", async (req, res) => {
     console.log(`[${new Date().toISOString()}] Login successful for ${username}`);
 
     res.json({
-      token,
       user: {
         _id: user._id,
         fname: user.fname,
