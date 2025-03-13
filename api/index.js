@@ -453,8 +453,26 @@ app.post("/login-handyman", async (req, res) => {
     // Log successful login
     console.log(`Login successful for user: ${username}, Handyman ID: ${handyman._id}`);
 
-    
-    
+    // Send handyman data along with the token
+    res.json({
+      token,
+      handyman: {
+        id: handyman._id,
+        fname: handyman.fname,
+        lname: handyman.lname,
+        username: handyman.username,
+        dateOfBirth: handyman.dateOfBirth,
+        contact: handyman.contact,
+        email: handyman.email,
+        address: handyman.address,
+        specialization: handyman.specialization,
+        images: handyman.images,
+        certificatesImages: handyman.certificatesImages,
+        dataPrivacyConsent: handyman.dataPrivacyConsent,
+        accounts_status: handyman.accounts_status,
+        logged_in: handyman.logged_in, // Include logged_in status in response
+      },
+    });
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ message: "Server error" });
@@ -543,7 +561,22 @@ app.post("/login-user", async (req, res) => {
     // Log the token generation success
     console.log("JWT token generated and logged_in status updated for user:", username);
 
-  
+    // Return the token and user data including _id
+    res.json({
+      token,
+      user: {
+        _id: user._id,
+        username: username,
+        fname: user.fname,
+        lname: user.lname,
+        dateOfBirth: user.dateOfBirth,
+        email: user.email,
+        contact: user.contact,
+        images: user.images,
+        accounts_status: user.accounts_status,
+        logged_in: user.logged_in, // Include logged_in status in response
+      },
+    });
   } catch (error) {
     // Log the error with detailed message
     console.error("Server error during login:", error);
