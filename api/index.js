@@ -420,48 +420,62 @@ app.post("/register-handyman", async (req, res) => {
   }
 });
 
+// Login endpoint
 app.post("/login-handyman", async (req, res) => {
   const { username, password } = req.body;
 
-  console.log(`[${new Date().toISOString()}] Login attempt: ${username}`);
+  console.log("Login attempt:", { username });
 
   try {
-    const handyman = await Handyman.findOne({ username })
-      .select("_id password fname lname username accounts_status");
-
+    // Check if handyman exists
+    const handyman = await Handyman.findOne({ username });
     if (!handyman) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Invalid username`);
+      console.warn(`Login failed: Invalid username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
+    // Check if password is correct
     const isMatch = await bcrypt.compare(password, handyman.password);
     if (!isMatch) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Invalid password`);
+      console.warn(`Login failed: Invalid password for username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
-    if (["pending", "suspended"].includes(handyman.accounts_status)) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Account status - ${handyman.accounts_status}`);
-      return res.status(403).json({ message: `Your account status is: ${handyman.accounts_status}` });
-    }
-    // Fast status update using `updateOne()`
-    await Handyman.updateOne({ _id: handyman._id }, { $set: { logged_in: 1 } });
+    // Generate JWT token
+    const token = jwt.sign({ userId: handyman._id }, "secret_key", {
+      expiresIn: "1h",
+    });
 
-    console.log(`[${new Date().toISOString()}] Login successful for ${username}`);
+    // Update the handyman's logged-in status
+    handyman.logged_in = 1;
+    await handyman.save(); // Save the update to the database
 
+    // Log successful login
+    console.log(`Login successful for user: ${username}, Handyman ID: ${handyman._id}`);
+
+    // Send handyman data along with the token
     res.json({
+      token,
       handyman: {
         id: handyman._id,
         fname: handyman.fname,
         lname: handyman.lname,
         username: handyman.username,
+        dateOfBirth: handyman.dateOfBirth,
+        contact: handyman.contact,
+        email: handyman.email,
+        address: handyman.address,
+        specialization: handyman.specialization,
+        images: handyman.images,
+        certificatesImages: handyman.certificatesImages,
+        dataPrivacyConsent: handyman.dataPrivacyConsent,
         accounts_status: handyman.accounts_status,
+        logged_in: handyman.logged_in, // Include logged_in status in response
       },
     });
-
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error during login:`, error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    console.error("Error during login:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -507,52 +521,66 @@ app.get("/requested-profiles", async (req, res) => {
   }
 });
 
-app.post("/login-user", async (req, res) => { 
+// Login endpoint
+app.post("/login-user", async (req, res) => {
   const { username, password } = req.body;
 
-  console.log(`[${new Date().toISOString()}] Login attempt: ${username}`);
-
   try {
-    const user = await User.findOne({ username })
-      .select("_id password fname lname username dateOfBirth contact images accounts_status");
+    // Log the incoming request body
+    console.log("Login request body:", req.body);
 
+    // Check if user exists
+    const user = await User.findOne({ username });
     if (!user) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Invalid username`);
+      console.warn(`Login failed: Invalid username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
+    // Log user information
+    console.log("User found:", user);
+
+    // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Invalid password`);
+      console.warn(`Login failed: Invalid password for username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
-    if (["pending", "suspended"].includes(user.accounts_status)) {
-      console.warn(`[${new Date().toISOString()}] Login failed: Account status - ${user.accounts_status}`);
-      return res.status(403).json({ message: `Your account status is: ${user.accounts_status}` });
-    }
+    // Log password match success
+    console.log("Password match successful for user:", username);
 
-    // Fast status update using `updateOne()` for better performance
-    await User.updateOne({ _id: user._id }, { $set: { logged_in: 1 } });
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id }, "secret_key", {
+      expiresIn: "1h",
+    });
 
-    console.log(`[${new Date().toISOString()}] Login successful for ${username}`);
+    // Update the user's logged-in status
+    user.logged_in = 1;
+    await user.save(); // Save the update to the database
 
+    // Log the token generation success
+    console.log("JWT token generated and logged_in status updated for user:", username);
+
+    // Return the token and user data including _id
     res.json({
+      token,
       user: {
         _id: user._id,
+        username: username,
         fname: user.fname,
         lname: user.lname,
-        username: user.username,
         dateOfBirth: user.dateOfBirth,
+        email: user.email,
         contact: user.contact,
         images: user.images,
         accounts_status: user.accounts_status,
+        logged_in: user.logged_in, // Include logged_in status in response
       },
     });
-
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error during login:`, error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    // Log the error with detailed message
+    console.error("Server error during login:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
