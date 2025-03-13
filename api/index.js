@@ -444,9 +444,6 @@ app.post("/login-handyman", async (req, res) => {
       console.warn(`[${new Date().toISOString()}] Login failed: Account status - ${handyman.accounts_status}`);
       return res.status(403).json({ message: `Your account status is: ${handyman.accounts_status}` });
     }
-
-    const token = jwt.sign({ userId: handyman._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
     // Fast status update using `updateOne()`
     await Handyman.updateOne({ _id: handyman._id }, { $set: { logged_in: 1 } });
 
