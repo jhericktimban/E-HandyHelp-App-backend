@@ -532,7 +532,7 @@ app.post("/login-user", async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
-      console.warn(`Login failed: Invalid username - ${username}`);
+      console.log("User not found:", username);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
@@ -542,7 +542,7 @@ app.post("/login-user", async (req, res) => {
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.warn(`Login failed: Invalid username - ${username}`);
+      console.log("Password mismatch for user:", username);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
@@ -1767,9 +1767,6 @@ app.post('/change-password-handyman', async (req, res) => {
     res.status(500).json({ message: 'An error occurred.', error: error.message });
   }
 });
-
-
-
 
 
 
