@@ -542,7 +542,7 @@ app.post("/login-user", async (req, res) => {
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.warn(`Login failed: Invalid password for username - ${username}`);
+       console.warn(`Login failed: Invalid password for username - ${username}`);
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
