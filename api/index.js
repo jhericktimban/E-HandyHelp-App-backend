@@ -480,10 +480,15 @@ app.post("/login-handyman", async (req, res) => {
   }
 });
 
-// Function to format date
 const formatDate = (date) => {
-  const options = { year: "numeric", month: "long", day: "numeric" };
-  return new Date(date).toLocaleDateString(undefined, options); // Format the date to "Month Day, Year"
+  return new Date(date).toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 };
 
 app.get("/requested-profiles", async (req, res) => {
