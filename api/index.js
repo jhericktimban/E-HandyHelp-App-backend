@@ -424,9 +424,10 @@ app.post("/register-handyman", async (req, res) => {
 app.post("/login-handyman", async (req, res) => {
   const { username, password } = req.body;
 
-  console.log("Login attempt:", { username });
 
   try {
+
+    console.log("Login request body:", req.body);
     // Check if handyman exists
     const handyman = await Handyman.findOne({ username });
     if (!handyman) {
@@ -742,9 +743,17 @@ app.post("/accept-booking", async (req, res) => {
   } = req.body;
 
   try {
-    // Save auto-generated chat message
-    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\ncontact: ${contact},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
-
+    const formattedDate = new Date(dateOfService).toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true, // For AM/PM format
+    });
+    
+    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\nContact: ${contact},\nEmail: ${email},\nAddress: ${address},\nBooking Date: ${formattedDate}\nThank you!`;
+    
     const newChat = new Chat({
       booking_id: bookingId,
       handyman_id: handymanId,
@@ -1302,6 +1311,8 @@ const feedbackSchema = new mongoose.Schema(
 );
 
 const Feedback = mongoose.model("Feedback", feedbackSchema);
+
+
 
 app.post("/feedback", async (req, res) => {
   try {
