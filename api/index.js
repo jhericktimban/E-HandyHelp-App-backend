@@ -743,17 +743,9 @@ app.post("/accept-booking", async (req, res) => {
   } = req.body;
 
   try {
-    const formattedDate = new Date(dateOfService).toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true, // For AM/PM format
-    });
-    
-    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\nContact: ${contact},\nEmail: ${email},\nAddress: ${address},\nBooking Date: ${formattedDate}\nThank you!`;
-    
+    // Save auto-generated chat message
+    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\ncontact: ${contact},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
+
     const newChat = new Chat({
       booking_id: bookingId,
       handyman_id: handymanId,
