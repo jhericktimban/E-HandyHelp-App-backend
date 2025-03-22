@@ -749,7 +749,22 @@ app.post("/accept-booking", async (req, res) => {
 
   try {
     // Save auto-generated chat message
-    const chatContent = `This is an auto-generated chat. Hi ${name}, I have accepted your booking for ${serviceDetails}. Please confirm if the following details are correct:\nName: ${name},\ncontact: ${contact},\nemail: ${email},\nAddress: ${address},\nBooking Date: ${dateOfService}\nThank you!`;
+    const chatContent = `
+This is an auto-generated chat.
+
+Hi ${name}, 
+
+I have accepted your booking for **${serviceDetails}**.  
+Please confirm if the following details are correct:  
+
+**Name:** ${name}  
+**Contact:** ${contact}  
+**Email:** ${email}  
+**Address:** ${address}  
+**Booking Date:** ${dateOfService}  
+
+Thank you!
+`;
 
     const newChat = new Chat({
       booking_id: bookingId,
