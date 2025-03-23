@@ -93,7 +93,6 @@ const chatSchema = new mongoose.Schema({
   date_sent: { type: Date, default: Date.now },
 });
 
-const Chat = mongoose.model("Chat", chatSchema);
 
 // Notification Schema
 const notificationSchema = new mongoose.Schema({
