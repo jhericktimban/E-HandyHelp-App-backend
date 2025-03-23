@@ -10,7 +10,6 @@ const axios = require("axios"); // For making HTTP requests
 
 const http = require("http"); // Required for Socket.IO integration
 const socketIo = require("socket.io"); // Socket.IO
-const Chat = require("./models/Chat"); // Assuming you have a Chat model
 
 const app = express();
 const server = http.createServer(app); // Create HTTP server for Socket.IO
@@ -93,6 +92,7 @@ const chatSchema = new mongoose.Schema({
   date_sent: { type: Date, default: Date.now },
 });
 
+const Chat = mongoose.model("Chat", chatSchema);
 
 // Notification Schema
 const notificationSchema = new mongoose.Schema({
