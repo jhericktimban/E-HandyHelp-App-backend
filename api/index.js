@@ -8,17 +8,9 @@ const nodemailer = require("nodemailer");
 require("dotenv").config(); // Ensure this is configured correctly
 const axios = require("axios"); // For making HTTP requests
 
-const http = require("http"); // Required for Socket.IO integration
-const socketIo = require("socket.io"); // Socket.IO
+
 
 const app = express();
-const server = http.createServer(app); // Create HTTP server for Socket.IO
-const io = socketIo(server, {
-  cors: {
-    origin: "*", // Allow your Flutter app's URL
-    methods: ["GET", "POST"],
-  }
-});
 
 app.use(cors());
 app.use(bodyParser.json({ limit: "50mb" })); // Adjust the size as needed
@@ -41,40 +33,8 @@ mongoose
   .catch((error) => {
     console.error("Connection error:", error);
   });
+  
 
-  // Socket.IO for Real-time Messaging
-io.on("connection", (socket) => {
-  console.log("New client connected");
-
-  // Join a chat room based on booking_id
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
-    console.log(`User joined room: ${roomId}`);
-  });
-
-  // Handle sending messages
-  socket.on("sendMessage", async (messageData) => {
-    const { contents, handyman_id, user_id, booking_id } = messageData;
-
-    const newMessage = new Chat({
-      contents,
-      handyman_id,
-      user_id,
-      booking_id,
-      sender: "user",
-      date_sent: new Date(),
-    });
-
-    await newMessage.save();
-
-    // Emit the new message only to the relevant room
-    io.to(booking_id).emit("newMessage", newMessage);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
-  });
-});
 
 
 // Chat Schema
