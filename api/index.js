@@ -1790,21 +1790,6 @@ app.post('/change-password-handyman', async (req, res) => {
   }
 });
 
-app.post("/api/delete-logs", async (req, res) => {
-  const { logIds } = req.body;
-
-  if (!logIds || logIds.length === 0) {
-    return res.status(400).json({ message: "No logs selected for deletion." });
-  }
-
-  try {
-    await ActivityLog.deleteMany({ _id: { $in: logIds } });
-    res.status(200).json({ message: "Selected logs deleted successfully." });
-  } catch (error) {
-    console.error("Error deleting logs:", error);
-    res.status(500).json({ message: "Failed to delete logs." });
-  }
-});
 
 
 
