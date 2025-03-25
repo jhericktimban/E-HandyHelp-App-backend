@@ -362,27 +362,12 @@ const handymanSchema = new mongoose.Schema(
 const Handyman = mongoose.model("Handyman", handymanSchema);
 
 
-// Get verified handymen with pagination and optimized queries
+// Get all verified handymen
 app.get("/profiles", async (req, res) => {
-  const page = parseInt(req.query.page) || 1;    // Default to page 1
-  const limit = parseInt(req.query.limit) || 10; // Default limit to 10 profiles
-  const skip = (page - 1) * limit;
-
   try {
-    const profiles = await Handyman.find({ accounts_status: "verified" })
-      .select("fname lname address contact email specialization images") // Select only needed fields
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }) // Optional: Sort by newest first
-      .lean(); // Returns plain JavaScript objects for better performance
-
-    const total = await Handyman.countDocuments({ accounts_status: "verified" });
-
-    res.json({
-      data: profiles,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-    });
+    // Fetch only handymen with account_status set to 'verified'
+    const profiles = await Handyman.find({ accounts_status: "verified" });
+    res.json(profiles);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
