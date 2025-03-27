@@ -492,6 +492,32 @@ const formatDate = (date) => {
   });
 };
 
+app.get("/booked-timeslots", async (req, res) => {
+  const { handymanId, dateOfService } = req.query;
+
+  if (!handymanId || !dateOfService) {
+    return res.status(400).json({ error: "Handyman ID and date are required." });
+  }
+
+  try {
+    // Fetch bookings with 'accepted' status on the specified date
+    const bookings = await Booking.find({
+      handymanId,
+      dateOfService: new Date(dateOfService), // Ensure correct date format
+      status: "accepted",
+    });
+
+    // Extract booked time slots
+    const bookedSlots = bookings.map((booking) => booking.timeSlot);
+
+    res.status(200).json({ bookedSlots });
+  } catch (error) {
+    console.error("Error fetching booked slots:", error);
+    res.status(500).json({ message: "Failed to fetch booked slots." });
+  }
+});
+
+
 app.get("/requested-profiles", async (req, res) => {
   try {
     // Get handymanId from the query parameters
@@ -597,10 +623,12 @@ const bookingSchema = new mongoose.Schema({
   handymanId: String,
   serviceDetails: String,
   dateOfService: Date,
+  timeSlot: String, 
   urgentRequest: Boolean,
-  images: [String], // Base64 images
+  images: [String],
   status: String,
 });
+
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
@@ -762,6 +790,7 @@ Name: ${name}
 Contact: ${contact}  
 Email: ${email}  
 Address: ${address}  
+Description: ${serviceDetails}
 Booking Date: ${dateOfService}  
 
 Thank you!
