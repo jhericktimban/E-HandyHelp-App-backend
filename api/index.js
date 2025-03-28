@@ -766,11 +766,12 @@ app.post("/accept-booking", async (req, res) => {
     contact,
     email,
     address,
+    timeSlot,
     dateOfService,
-    timeSlot, // New field for the time slot
   } = req.body;
 
   try {
+
     // Check if the time slot is already booked
     const existingBooking = await Booking.findOne({
       handymanId,
@@ -784,7 +785,6 @@ app.post("/accept-booking", async (req, res) => {
         .status(400)
         .json({ message: "This time slot is already booked." });
     }
-
     // Save auto-generated chat message
     const chatContent = 
 `This is an auto-generated chat.
@@ -798,9 +798,8 @@ Name: ${name}
 Contact: ${contact}  
 Email: ${email}  
 Address: ${address}  
-Description: ${serviceDetails}  
+Description: ${serviceDetails}
 Booking Date: ${dateOfService}  
-Time Slot: ${timeSlot}  
 
 Thank you!
 `;
@@ -823,8 +822,8 @@ Thank you!
     });
     await notification.save();
 
-    // Update booking status and time slot
-    await Booking.findOneAndUpdate(
+     // Update booking status and time slot
+     await Booking.findOneAndUpdate(
       { _id: bookingId },
       { status: "accepted", timeSlot }, // Save the selected time slot
       { new: true }
@@ -834,11 +833,10 @@ Thank you!
       .status(200)
       .json({ message: "Booking accepted, chat and notification sent." });
   } catch (error) {
-    console.error(error);
+    console.error(error); // Log error for debugging
     res.status(500).json({ error: "Failed to accept booking." });
   }
 });
-
 
 // Decline booking and send notification
 app.post("/decline-booking", async (req, res) => {
@@ -1323,6 +1321,7 @@ app.patch("/bookings/:id/complete", async (req, res) => {
     res.status(500).json({ message: "Error marking booking as completed." });
   }
 });
+
 
 
 const feedbackSchema = new mongoose.Schema(
