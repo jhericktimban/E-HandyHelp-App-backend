@@ -492,7 +492,6 @@ const formatDate = (date) => {
   });
 };
 
-
 app.get("/requested-profiles", async (req, res) => {
   try {
     // Get handymanId from the query parameters
@@ -598,32 +597,12 @@ const bookingSchema = new mongoose.Schema({
   handymanId: String,
   serviceDetails: String,
   dateOfService: Date,
-  timeSlot: String,  
   urgentRequest: Boolean,
-  images: [String],
+  images: [String], // Base64 images
   status: String,
 });
 
-
 const Booking = mongoose.model("Booking", bookingSchema);
-
-app.post("/api/bookings/booked-slots", async (req, res) => {
-  const { handymanId, date } = req.body;
-
-  try {
-    const bookedSlots = await Booking.find({
-      handymanId: handymanId,
-      dateOfService: new Date(date), // Match date
-      status: { $in: ["accepted", "requested"] } // Active bookings
-    }).distinct("timeSlot");
-
-    res.status(200).json({ bookedSlots });
-  } catch (error) {
-    console.error("Error fetching booked slots:", error);
-    res.status(500).json({ error: "Failed to fetch booked slots." });
-  }
-});
-
 
 // POST route to handle booking requests
 app.post("/api/bookings", async (req, res) => {
@@ -766,25 +745,10 @@ app.post("/accept-booking", async (req, res) => {
     contact,
     email,
     address,
-    timeSlot,
     dateOfService,
   } = req.body;
 
   try {
-
-    // Check if the time slot is already booked
-    const existingBooking = await Booking.findOne({
-      handymanId,
-      dateOfService,
-      timeSlot,
-      status: "accepted", // Only check accepted bookings
-    });
-
-    if (existingBooking) {
-      return res
-        .status(400)
-        .json({ message: "This time slot is already booked." });
-    }
     // Save auto-generated chat message
     const chatContent = 
 `This is an auto-generated chat.
@@ -822,11 +786,11 @@ Thank you!
     });
     await notification.save();
 
-     // Update booking status and time slot
-     await Booking.findOneAndUpdate(
-      { _id: bookingId },
-      { status: "accepted", timeSlot }, // Save the selected time slot
-      { new: true }
+    // Update booking status based on bookingId
+    await Booking.findOneAndUpdate(
+      { _id: bookingId }, // Use bookingId to find the booking
+      { status: "accepted" },
+      { new: true },
     );
 
     res
@@ -1309,20 +1273,24 @@ app.patch("/bookings/:id/complete", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Find the booking to get the handymanId
     const booking = await Booking.findById(id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
+    // Update the booking status to completed
     booking.status = "completed";
     await booking.save();
 
-    res.status(200).json({ message: "Booking marked as completed." });
+    res.status(200).json(booking);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error marking booking as completed." });
+    res
+      .status(500)
+      .json({ message: "Error marking booking as completed", error });
   }
 });
-
-
 
 const feedbackSchema = new mongoose.Schema(
   {
