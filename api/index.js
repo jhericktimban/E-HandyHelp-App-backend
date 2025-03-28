@@ -492,31 +492,6 @@ const formatDate = (date) => {
   });
 };
 
-app.get("/booked-timeslots", async (req, res) => {
-  const { handymanId, dateOfService } = req.query;
-
-  if (!handymanId || !dateOfService) {
-    return res.status(400).json({ error: "Handyman ID and date are required." });
-  }
-
-  try {
-    // Fetch bookings with 'accepted' status on the specified date
-    const bookings = await Booking.find({
-      handymanId,
-      dateOfService: new Date(dateOfService), // Ensure correct date format
-      status: "accepted",
-    });
-
-    // Extract booked time slots
-    const bookedSlots = bookings.map((booking) => booking.timeSlot);
-
-    res.status(200).json({ bookedSlots });
-  } catch (error) {
-    console.error("Error fetching booked slots:", error);
-    res.status(500).json({ message: "Failed to fetch booked slots." });
-  }
-});
-
 
 app.get("/requested-profiles", async (req, res) => {
   try {
@@ -623,7 +598,7 @@ const bookingSchema = new mongoose.Schema({
   handymanId: String,
   serviceDetails: String,
   dateOfService: Date,
-  timeSlot: String, 
+  timeSlot: String,  
   urgentRequest: Boolean,
   images: [String],
   status: String,
@@ -631,6 +606,24 @@ const bookingSchema = new mongoose.Schema({
 
 
 const Booking = mongoose.model("Booking", bookingSchema);
+
+app.post("/api/bookings/booked-slots", async (req, res) => {
+  const { handymanId, date } = req.body;
+
+  try {
+    const bookedSlots = await Booking.find({
+      handymanId: handymanId,
+      dateOfService: new Date(date), // Match date
+      status: { $in: ["accepted", "requested"] } // Active bookings
+    }).distinct("timeSlot");
+
+    res.status(200).json({ bookedSlots });
+  } catch (error) {
+    console.error("Error fetching booked slots:", error);
+    res.status(500).json({ error: "Failed to fetch booked slots." });
+  }
+});
+
 
 // POST route to handle booking requests
 app.post("/api/bookings", async (req, res) => {
@@ -774,9 +767,24 @@ app.post("/accept-booking", async (req, res) => {
     email,
     address,
     dateOfService,
+    timeSlot, // New field for the time slot
   } = req.body;
 
   try {
+    // Check if the time slot is already booked
+    const existingBooking = await Booking.findOne({
+      handymanId,
+      dateOfService,
+      timeSlot,
+      status: "accepted", // Only check accepted bookings
+    });
+
+    if (existingBooking) {
+      return res
+        .status(400)
+        .json({ message: "This time slot is already booked." });
+    }
+
     // Save auto-generated chat message
     const chatContent = 
 `This is an auto-generated chat.
@@ -790,8 +798,9 @@ Name: ${name}
 Contact: ${contact}  
 Email: ${email}  
 Address: ${address}  
-Description: ${serviceDetails}
+Description: ${serviceDetails}  
 Booking Date: ${dateOfService}  
+Time Slot: ${timeSlot}  
 
 Thank you!
 `;
@@ -814,21 +823,22 @@ Thank you!
     });
     await notification.save();
 
-    // Update booking status based on bookingId
+    // Update booking status and time slot
     await Booking.findOneAndUpdate(
-      { _id: bookingId }, // Use bookingId to find the booking
-      { status: "accepted" },
-      { new: true },
+      { _id: bookingId },
+      { status: "accepted", timeSlot }, // Save the selected time slot
+      { new: true }
     );
 
     res
       .status(200)
       .json({ message: "Booking accepted, chat and notification sent." });
   } catch (error) {
-    console.error(error); // Log error for debugging
+    console.error(error);
     res.status(500).json({ error: "Failed to accept booking." });
   }
 });
+
 
 // Decline booking and send notification
 app.post("/decline-booking", async (req, res) => {
@@ -1301,24 +1311,19 @@ app.patch("/bookings/:id/complete", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the booking to get the handymanId
     const booking = await Booking.findById(id);
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    // Update the booking status to completed
     booking.status = "completed";
     await booking.save();
 
-    res.status(200).json(booking);
+    res.status(200).json({ message: "Booking marked as completed." });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error marking booking as completed", error });
+    res.status(500).json({ message: "Error marking booking as completed." });
   }
 });
+
 
 const feedbackSchema = new mongoose.Schema(
   {
