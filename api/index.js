@@ -702,7 +702,6 @@ app.get("/bookings-user", async (req, res) => {
       userId: userId,
       status: status,
     });
-
     // Prepare an array to hold bookings with user details
     const bookingsWithUserDetails = await Promise.all(
       bookings.map(async (booking) => {
