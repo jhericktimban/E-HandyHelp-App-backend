@@ -734,6 +734,23 @@ app.get("/bookings-user", async (req, res) => {
   }
 });
 
+app.get('/api/bookings/booked-timeslots', async (req, res) => {
+  try {
+      const { date } = req.query;
+
+      const bookings = await Booking.find({
+          dateOfService: date,
+          status: 'accepted'
+      }).select('timeSlot');
+
+      const bookedSlots = bookings.map(booking => booking.timeSlot);
+      res.json(bookedSlots);
+  } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch booked timeslots' });
+  }
+});
+
+
 // Accept booking and send chat and notification
 app.post("/accept-booking", async (req, res) => {
   const {
