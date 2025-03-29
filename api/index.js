@@ -702,6 +702,7 @@ app.get("/bookings-user", async (req, res) => {
       userId: userId,
       status: status,
     });
+
     // Prepare an array to hold bookings with user details
     const bookingsWithUserDetails = await Promise.all(
       bookings.map(async (booking) => {
@@ -801,9 +802,8 @@ Thank you!
   }
 });
 
-// Decline booking and send notification
 app.post("/decline-booking", async (req, res) => {
-  const { handymanId, userId, bookingId } = req.body; // Accept bookingId
+  const { handymanId, userId, bookingId } = req.body; 
 
   try {
     // Save notification
@@ -814,16 +814,16 @@ app.post("/decline-booking", async (req, res) => {
     });
     await notification.save();
 
-    // Update booking status based on bookingId
+   
     await Booking.findOneAndUpdate(
-      { _id: bookingId }, // Use bookingId to find the booking
+      { _id: bookingId }, 
       { status: "declined" },
       { new: true },
     );
 
     res.status(200).json({ message: "Booking declined, notification sent." });
   } catch (error) {
-    console.error(error); // Log error for debugging
+    console.error(error);
     res.status(500).json({ error: "Failed to decline booking." });
   }
 });
